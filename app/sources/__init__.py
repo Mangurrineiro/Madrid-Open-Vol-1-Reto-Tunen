@@ -8,4 +8,4 @@ from __future__ import annotations
 from .base import SOURCES, Source, register_source, row  # noqa: F401
 
 # Importar los módulos registra sus fuentes.
-from . import soilgrids  # noqa: F401,E402
+from . import lbeg, soilgrids  # noqa: F401,E402

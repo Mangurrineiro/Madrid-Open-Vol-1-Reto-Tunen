@@ -48,6 +48,11 @@ def cmd_test(args) -> None:
         rows = run_field(f, args.source or None)
         print(f"  {len(rows)} filas en {time.time() - t0:.1f} s")
         summarize(rows)
+        from .sources import SOURCES
+        for name, src in SOURCES.items():
+            if getattr(src, "last_stats", None) and (not args.source or name in args.source):
+                print(f"  {name}: {src.last_stats}")
+                src.last_stats = None
         ex = next((r for r in rows if r["status"] == "ok"), rows[0] if rows else None)
         if ex:
             print(f"  ejemplo de fila: {ex}")

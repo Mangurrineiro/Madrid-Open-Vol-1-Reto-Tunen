@@ -1,0 +1,10 @@
+bodenart,feinanteil_min,feinanteil_max,nota
+S,0,10,% particulas < 0.01 mm; limite superior exclusivo
+Sl,10,14,S + ele minuscula
+lS,14,19,
+SL,19,24,
+sL,24,30,
+L,30,45,
+LT,45,61,
+T,61,100,
+Mo,,,organico (Moor): sin rango mineral
