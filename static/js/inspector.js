@@ -1,7 +1,7 @@
 // Inspector: clic en un punto del campo → tarjeta con los valores de cada fuente en el punto más cercano.
 /* global L */
 import { escapeHtml, getMap } from './map2d.js';
-import { BS_NAMES, KA5_NAMES, palette, toCss } from './palettes.js';
+import { KA5_NAMES, bsName, palette, toCss } from './palettes.js';
 import { soilOrigin } from './tooltip.js';
 
 let popup = null;
@@ -45,7 +45,7 @@ export function openInspector(point, field) {
   const origin = soilOrigin(point.klassenzeichen);
   const classes = `
     <div class="insp-classes">
-      <div><span>Soil assessment</span><b>${cl.bodenart_bs ? `${escapeHtml(cl.bodenart_bs)} · ${escapeHtml(BS_NAMES[cl.bodenart_bs] || '')}` : '—'}</b></div>
+      <div><span>Soil assessment</span><b>${cl.bodenart_bs ? `${escapeHtml(cl.bodenart_bs)} · ${escapeHtml(bsName(cl.bodenart_bs))}` : '—'}</b></div>
       <div><span>KA5 class</span><b>${cl.ka5_class ? `${escapeHtml(cl.ka5_class)} · ${escapeHtml(KA5_NAMES[cl.ka5_class] || '')}` : '—'}</b></div>
       <div><span>Soil type</span><b>${cl.soil_type ? escapeHtml(cl.soil_type) : '—'}</b></div>
       ${origin ? `<div><span>Parent material</span><b>${escapeHtml(origin)}</b></div>` : ''}

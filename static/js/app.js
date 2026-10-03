@@ -8,7 +8,7 @@ import {
   setUncertaintyOverlay, showSampling, showUncertainty, unionBounds,
 } from './map2d.js';
 import { cardFor, cardHtml, initPanel, renderLegend, renderPanel } from './panel.js';
-import { BS_NAMES, KA5_NAMES, palette, toCss } from './palettes.js';
+import { BS_NAMES, KA5_NAMES, bsName, palette, toCss } from './palettes.js';
 import { cellValue, clearRenderCache, emptyGrid, pointInRings, renderLayer, ringsOf } from './renderer.js';
 import { hideTip, initTooltip, showTip, soilOrigin } from './tooltip.js';
 import { farmScale, resetScales, summarize, uncertaintyGrid, uncertaintyText } from './uncertainty.js';
@@ -519,8 +519,8 @@ function valueTip(layer, sub, v, lat, lng) {
   const src = panelView().source;
   const ex = state.extras || {};
   if (layer.id === 'texture' && sub === 'classes') {
-    const isBs = !!BS_NAMES[v];
-    const name = BS_NAMES[v] || KA5_NAMES[v] || '';
+    const isBs = !KA5_NAMES[v] && (!!BS_NAMES[v] || bsName(v) !== v || /Mo|\//.test(v));
+    const name = isBs ? bsName(v) : (KA5_NAMES[v] || '');
     const pt = state.points ? nearestPoint(state.points, lat, lng) : null;
     const parts = ['clay', 'sand', 'silt'].map((p) => [p, pt?.values[p]?.derived ?? cellValue(ex[p], lat, lng)])
       .filter(([, x]) => x != null);

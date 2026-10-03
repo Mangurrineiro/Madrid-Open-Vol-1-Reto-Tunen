@@ -109,7 +109,21 @@ export function ka5Color(cls) {
 }
 
 export function bsColor(cls) {
-  return BS_COLORS[cls] ? parseColor(BS_COLORS[cls]) : mixHex('#B9A27A', '#5A4630', hash01(String(cls)));
+  if (BS_COLORS[cls]) return parseColor(BS_COLORS[cls]);
+  const first = String(cls).split('/')[0].replace(/Mo$/, '');
+  // Clases compuestas (p. ej. "Mo/S", "lSMo"): color de la primera parte, oscurecido si lleva turba
+  if (BS_COLORS[first]) return mixHex(BS_COLORS[first], BS_COLORS.Mo, /Mo/.test(cls) ? 0.45 : 0.15);
+  return mixHex('#B9A27A', '#5A4630', hash01(String(cls)));
+}
+
+/** Nombre en claro de una clase de la Bodenschätzung, incluidas las compuestas. */
+export function bsName(cls) {
+  if (BS_NAMES[cls]) return BS_NAMES[cls];
+  const parts = String(cls).split('/');
+  if (parts.length === 2 && parts.every((x) => BS_NAMES[x])) return `${BS_NAMES[parts[0]]} over ${BS_NAMES[parts[1]].toLowerCase()}`;
+  const m = String(cls).match(/^(.+)Mo$/);
+  if (m && BS_NAMES[m[1]]) return `${BS_NAMES[m[1]]} with peat`;
+  return cls;
 }
 
 export const toCss = (c) => c ? `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${c[3].toFixed(3)})` : 'transparent';
@@ -122,7 +136,7 @@ export function palette(key) {
   let p;
   if (key === 'bs') {
     p = { kind: 'cat', key, color: (v) => v == null ? null : bsColor(v), title: 'German soil assessment classes',
-      name: (v) => BS_NAMES[v] || v, sort: (a, b) => (BS_ORDER.indexOf(a) + 99 * (BS_ORDER.indexOf(a) < 0)) - (BS_ORDER.indexOf(b) + 99 * (BS_ORDER.indexOf(b) < 0)) };
+      name: (v) => bsName(v), sort: (a, b) => (BS_ORDER.indexOf(a) + 99 * (BS_ORDER.indexOf(a) < 0)) - (BS_ORDER.indexOf(b) + 99 * (BS_ORDER.indexOf(b) < 0)) };
   } else if (key === 'ka5') {
     const rank = (c) => { const g = ka5Group(c); const gi = 'SULT'.indexOf(g); const o = g ? KA5_GROUPS[g].order.indexOf(c) : 99; return (gi < 0 ? 9 : gi) * 100 + (o < 0 ? 50 : o); };
     p = { kind: 'cat', key, color: (v) => v == null ? null : ka5Color(v), title: 'KA5 texture classes',
