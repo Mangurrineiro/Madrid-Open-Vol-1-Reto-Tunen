@@ -55,8 +55,7 @@ export async function farmScale(layer, fields) {
   if (scales.has(layer.id)) return scales.get(layer.id);
   const p = (async () => {
     const spread = [], sigma = [];
-    for (const f of fields) {
-      const g = await rawGrid(layer, f);
+    for (const g of await Promise.all(fields.map((f) => rawGrid(layer, f)))) {
       if (!g) continue;
       for (const row of g.values) for (const v of row) if (v) (v.kind === 'spread' ? spread : sigma).push(v.raw);
     }
