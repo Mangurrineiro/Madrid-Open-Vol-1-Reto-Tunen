@@ -125,7 +125,7 @@ export function showSampling(points, { compact = false } = {}) {
       : L.divIcon({ className: 'sample-marker', html: `<span class="pulse"></span><span class="dot">${p.rank}</span>`,
         iconSize: [30, 30], iconAnchor: [15, 15] }),
   }).bindTooltip(`<b>Sampling point ${p.rank}${p.fieldName ? ` · ${escapeHtml(p.fieldName)}` : ''}</b><span>${escapeHtml(p.reason)}</span>`,
-    { direction: 'top', offset: [0, -14], className: 'field-label sample-tip', opacity: 1 })
+    { direction: 'right', offset: [16, 0], className: 'field-label sample-tip', opacity: 1 })
     .on('add', function () { this.getElement().style.animationDelay = `${(i % 12) * 40}ms`; })));
   sampleLayer.addTo(map);
 }

@@ -328,3 +328,16 @@ kbd { font-family: inherit; font-size: 10.5px; color: var(--muted); border: 1px 
 .leaflet-interactive:focus, .leaflet-container :focus { outline: none; }
 .sample-marker.compact .dot { inset: 1px; border-width: 2px; box-shadow: 0 0 0 3px rgba(201, 154, 78, 0.35), 0 1px 6px rgba(0, 0, 0, 0.6); }
 [hidden] { display: none !important; }
+
+/* ---------- etapa 2.3: pulido ---------- */
+.field-head, .active-layer .card, .featured-list { animation: fadein 350ms ease-out; }
+.empty-state { display: flex; gap: 14px; align-items: center; padding: 6px 0; }
+.empty-state div { display: flex; flex-direction: column; gap: 3px; }
+.empty-state b { font-size: 14px; }
+.empty-state span { color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.hatch-swatch.big { width: 44px; height: 44px; border-radius: 10px; flex: none; }
+.keys { padding: 10px 16px 6px; font-size: 11px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+.keys kbd { margin: 0 1px; }
+.keys { gap: 4px 12px; }
+.keys span { white-space: nowrap; }
+.leaflet-tooltip.sample-tip { min-width: 240px; }

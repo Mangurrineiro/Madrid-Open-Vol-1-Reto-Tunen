@@ -70,7 +70,8 @@ export function renderPanel(view) {
     <section class="panel-section">
       <h2 class="panel-title">Featured fields</h2>
       <div class="featured-list">${featured || '<p class="muted">No featured fields</p>'}</div>
-    </section>`;
+    </section>
+    ${KEYS}`;
 }
 
 function renderFieldPanel(view) {
@@ -110,8 +111,11 @@ function renderFieldPanel(view) {
       <div id="card" class="card">${u.on ? uncertaintyCard(view, layer) : cardHtml(view.card)}</div>
       <div id="legend" class="legend"></div>
     </section>
-    <section class="panel-section">${samplingButton(view)}</section>`;
+    <section class="panel-section">${samplingButton(view)}</section>
+    ${KEYS}`;
 }
+
+const KEYS = `<footer class="keys"><span><kbd>1-6</kbd> layers</span><span><kbd>U</kbd> uncertainty</span><span><kbd>S</kbd> sampling</span><span><kbd>B</kbd> back</span></footer>`;
 
 function uncertaintyCard(view, layer) {
   if (view.uncertainty.available === undefined) return cardHtml(null);
@@ -145,7 +149,9 @@ function uncertaintyCard(view, layer) {
  */
 export function cardHtml(card) {
   if (!card) return '<div class="skeleton"></div><div class="skeleton short"></div>';
-  if (card.kind === 'empty') return `<div class="unc-na">${escapeHtml(card.message)}</div>`;
+  if (card.kind === 'empty') {
+    return `<div class="empty-state"><i class="hatch-swatch big"></i><div><b>No data here</b><span>${escapeHtml(card.message)}</span></div></div>`;
+  }
   const cov = `<span class="muted num">${card.coverage != null ? `${Math.round(card.coverage)} % coverage` : ''}</span>`;
   if (card.kind === 'quality') {
     return `<div class="quality">

@@ -6,7 +6,8 @@ import { escapeHtml } from './map2d.js';
 import { palette } from './palettes.js';
 import { emptyGrid, renderLayer, ringsOf } from './renderer.js';
 
-const GAP = 70;                 // separación entre láminas (translateZ)
+// Separación entre láminas (translateZ): 70 px a 1080 de alto, menos en pantallas bajas
+const gap = () => Math.round(Math.max(44, Math.min(70, window.innerHeight * 0.065)));
 const RX = 58;
 const RZ = -38;
 const FLAT_SCALE = 1.22;
@@ -126,7 +127,7 @@ export async function open(field, ctx, opts = {}) {
     <svg class="stack-lines"></svg><div class="stack-labels"></div>
     <div class="stack-hint">Drag to rotate · click a layer to open it</div>`;
   document.body.appendChild(host);
-  view = { field, ctx, host, rz: RZ, sheets: [], busy: false, anchorPts: anchorPoints(field) };
+  view = { field, ctx, host, rz: RZ, sheets: [], busy: false, anchorPts: anchorPoints(field), gap: gap() };
   renderPanel(field, ctx, null);
 
   const sheets = await buildSheets(field);
@@ -138,7 +139,7 @@ export async function open(field, ctx, opts = {}) {
   const ratio = sheets[0].out.canvas.width / sheets[0].out.canvas.height;
   const availW = window.innerWidth - (ctx.panel.offsetWidth || 360) - 120;
   const availH = window.innerHeight;
-  const maxW = Math.min(availW * 0.62, availH * 0.78, 620);
+  const maxW = Math.min(availW * 0.62, availH * 0.62, 620);
   let w = maxW, h = maxW / ratio;
   if (h > maxW * 1.05) { h = maxW * 1.05; w = h * ratio; }
 
@@ -234,7 +235,7 @@ function anchorOf(sheet) {
   return best;
 }
 
-function zOf(i) { return (i + 1) * GAP - 3 * GAP; }
+function zOf(i) { const g = view?.gap || gap(); return (i + 1) * g - 3 * g; }
 
 function setSheet(el, i, mode, lift = 0) {
   if (mode === 'flat') { el.style.transform = `translateZ(0px) scale(${FLAT_SCALE})`; el.style.opacity = '1'; return; }

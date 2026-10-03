@@ -499,7 +499,7 @@ function onMouseMove(e) {
   if (state.view !== 'field' || stackOpen() || breakdownOpen()) return;
   const f = state.byId.get(state.selected);
   const { lat, lng } = e.latlng;
-  const overPopup = e.originalEvent?.target?.closest?.('.leaflet-popup');
+  const overPopup = e.originalEvent?.target?.closest?.('.leaflet-popup, .sample-marker');
   if (!f || overPopup || !pointInRings(lng, lat, ringsOf(f.geometry))) { hideTip(); return; }
   const layer = currentLayer();
   let html;
