@@ -506,7 +506,7 @@ function updateSampling() {
     if (f.sampling) showSampling(f.sampling);
     else api.sampling(f.field_id).then((r) => state.sampling && state.selected === f.field_id && showSampling(r.points)).catch(() => {});
   } else {
-    showSampling(state.fields.flatMap((f) => (f.sampling || []).map((p) => ({ ...p, fieldName: f.name }))));
+    showSampling(state.fields.flatMap((f) => (f.sampling || []).map((p) => ({ ...p, fieldName: f.name }))), { compact: true });
   }
 }
 

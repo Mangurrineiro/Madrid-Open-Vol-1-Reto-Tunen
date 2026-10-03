@@ -115,13 +115,15 @@ export function clearUncertainty() {
 }
 
 /** Marcadores de muestreo pulsantes y numerados; tooltip con el motivo. */
-export function showSampling(points) {
+export function showSampling(points, { compact = false } = {}) {
   if (sampleLayer) { sampleLayer.remove(); sampleLayer = null; }
   if (!points?.length) return;
   sampleLayer = L.layerGroup(points.map((p, i) => L.marker([p.lat, p.lon], {
     pane: 'samplesPane',
-    icon: L.divIcon({ className: 'sample-marker', html: `<span class="pulse"></span><span class="dot">${p.rank}</span>`,
-      iconSize: [30, 30], iconAnchor: [15, 15] }),
+    icon: compact
+      ? L.divIcon({ className: 'sample-marker compact', html: '<span class="dot"></span>', iconSize: [14, 14], iconAnchor: [7, 7] })
+      : L.divIcon({ className: 'sample-marker', html: `<span class="pulse"></span><span class="dot">${p.rank}</span>`,
+        iconSize: [30, 30], iconAnchor: [15, 15] }),
   }).bindTooltip(`<b>Sampling point ${p.rank}${p.fieldName ? ` · ${escapeHtml(p.fieldName)}` : ''}</b><span>${escapeHtml(p.reason)}</span>`,
     { direction: 'top', offset: [0, -14], className: 'field-label sample-tip', opacity: 1 })
     .on('add', function () { this.getElement().style.animationDelay = `${(i % 12) * 40}ms`; })));
