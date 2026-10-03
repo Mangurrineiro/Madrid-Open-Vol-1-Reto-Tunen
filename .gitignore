@@ -21,3 +21,7 @@ __pycache__/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Salidas generadas por el backend (la caché data/cache SÍ se versiona: demo sin red)
+data/out/
+data/renders/
