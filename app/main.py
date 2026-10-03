@@ -6,6 +6,7 @@ API FastAPI.
 POST /soil/layers   {"fields": FeatureCollection, "parameters": [...]?, "sources": [...]?}
 GET  /sources       matriz de fuentes (nombre, parámetros, cobertura, resolución, notas)
 GET  /parameters    unidad, rango del colormap y descripción
+GET  /              UI (static/index.html);  GET /fields.geojson  campos de la granja
 /renders/...        PNG y grid JSON generados
 """
 
@@ -14,11 +15,12 @@ from __future__ import annotations
 from collections import Counter
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from .config import PARAMETERS, RENDERS
+from .config import FIELDS_GEOJSON, PARAMETERS, RENDERS, STATIC
 from .fields import parse_fields
 from .pipeline import run_field
 from .render import layer_stats, layer_status, render_layer
@@ -28,6 +30,16 @@ app = FastAPI(title="Tunen Soil Aggregation API", version="0.1")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 RENDERS.mkdir(parents=True, exist_ok=True)
 app.mount("/renders", StaticFiles(directory=RENDERS), name="renders")
+
+
+@app.get("/", include_in_schema=False)
+def index():
+    return FileResponse(STATIC / "index.html")
+
+
+@app.get("/fields.geojson", include_in_schema=False)
+def fields_geojson():
+    return FileResponse(FIELDS_GEOJSON, media_type="application/geo+json")
 
 
 class LayersRequest(BaseModel):
@@ -96,3 +108,20 @@ def sources() -> list[dict]:
 def parameters() -> dict:
     return {k: {"unit": v["unit"], "colormap": {"name": v["cmap"], "min": v["min"], "max": v["max"]},
                 "description": v["desc"]} for k, v in PARAMETERS.items()}
+
+
+@app.get("/legend/{cmap}.png", include_in_schema=False)
+def legend(cmap: str):
+    """Barra de color horizontal del colormap (la misma que usan los PNG)."""
+    import io
+
+    import numpy as np
+    from matplotlib import colormaps
+    from PIL import Image
+
+    if cmap not in colormaps:
+        raise HTTPException(404, f"colormap desconocido: {cmap}")
+    rgba = (colormaps[cmap](np.linspace(0, 1, 256))[None, :, :] * 255).astype("uint8").repeat(12, 0)
+    buf = io.BytesIO()
+    Image.fromarray(rgba, "RGBA").save(buf, "PNG")
+    return Response(buf.getvalue(), media_type="image/png", headers={"Cache-Control": "max-age=86400"})

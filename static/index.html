@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tunen Soil Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --bg: #14181d; --panel: #1b2027; --line: #2c333d; --text: #e8ecf1; --muted: #9aa5b3;
+    --ok: #4cc38a; --warn: #f0b429; --err: #ef5350; --accent: #7cc4ff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  #app { display: flex; height: 100%; }
+  #panel { width: 360px; flex: none; overflow-y: auto; background: var(--panel);
+    border-right: 1px solid var(--line); padding: 16px 16px 24px; }
+  #map { flex: 1; }
+  h1 { font-size: 18px; margin: 0 0 2px; letter-spacing: .2px; }
+  .sub { color: var(--muted); font-size: 12.5px; margin-bottom: 14px; }
+  label { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase;
+    letter-spacing: .6px; margin: 12px 0 4px; }
+  select { width: 100%; padding: 8px 10px; background: #11151a; color: var(--text);
+    border: 1px solid var(--line); border-radius: 8px; font-size: 14px; }
+  .card { background: #161a20; border: 1px solid var(--line); border-radius: 10px;
+    padding: 12px; margin-top: 14px; }
+  .card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted);
+    margin: 0 0 8px; font-weight: 600; }
+  .progress { height: 4px; background: #11151a; border-radius: 2px; overflow: hidden; margin-top: 6px; }
+  .progress > div { height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+  .small { font-size: 12px; color: var(--muted); }
+  #legend img { width: 100%; height: 14px; border-radius: 3px; display: block; image-rendering: auto; }
+  .ticks { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .cats { display: flex; flex-wrap: wrap; gap: 6px 10px; }
+  .cat { display: flex; align-items: center; gap: 6px; font-size: 12.5px; }
+  .sw { width: 12px; height: 12px; border-radius: 3px; flex: none; border: 1px solid #0006; }
+  #hover { font-size: 22px; font-weight: 600; min-height: 30px; font-variant-numeric: tabular-nums; }
+  #hover .u { font-size: 13px; color: var(--muted); font-weight: 400; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .b-ok { background: #4cc38a22; color: var(--ok); }
+  .b-no_coverage { background: #f0b42922; color: var(--warn); }
+  .b-error { background: #ef535022; color: var(--err); }
+  .notice { border-left: 3px solid var(--warn); background: #f0b42912; padding: 8px 10px;
+    border-radius: 6px; margin-top: 8px; font-size: 13px; }
+  .notice.err { border-color: var(--err); background: #ef535012; }
+  table.kv { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.kv td { padding: 3px 0; vertical-align: top; }
+  table.kv td:first-child { color: var(--muted); width: 42%; }
+  .prov { font-size: 12px; color: var(--muted); word-break: break-word; margin-top: 8px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; text-align: center; }
+  .stats div { background: #11151a; border-radius: 8px; padding: 6px 2px; }
+  .stats b { display: block; font-size: 16px; font-variant-numeric: tabular-nums; }
+  .stats span { font-size: 11px; color: var(--muted); text-transform: uppercase; }
+  .leaflet-container { background: #0d1014; }
+  .soil-img { image-rendering: pixelated; }
+  @media (max-width: 760px) {
+    #app { flex-direction: column-reverse; }
+    #panel { width: 100%; height: 45%; border-right: 0; border-top: 1px solid var(--line); }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="panel">
+    <h1>Tunen · Mapa de suelo</h1>
+    <div class="sub">Topsoil 0–30 cm · varias fuentes alemanas e internacionales unificadas</div>
+
+    <label for="param">Parámetro</label>
+    <select id="param"></select>
+    <label for="source">Fuente</label>
+    <select id="source"></select>
+
+    <div class="card">
+      <h2>Valor bajo el cursor</h2>
+      <div id="hover"><span class="small">Pasa el ratón por un campo</span></div>
+      <div id="hoverField" class="small"></div>
+    </div>
+
+    <div class="card" id="legend"><h2>Leyenda</h2><div id="legendBody"></div></div>
+
+    <div class="card" id="info"><h2 id="infoTitle">Granja</h2><div id="infoBody"></div></div>
+
+    <div class="card">
+      <h2>Carga</h2>
+      <div id="progressText" class="small">Cargando campos…</div>
+      <div class="progress"><div id="progressBar"></div></div>
+    </div>
+  </aside>
+  <div id="map"></div>
+</div>
+
+<script>
+const S = {
+  params: {}, sources: [], features: [], results: new Map(), outlines: new Map(),
+  overlays: L.layerGroup(), grids: new Map(), param: "clay", source: "soilgrids",
+  selected: null, done: 0, failed: 0,
+};
+const $ = (id) => document.getElementById(id);
+const fid = (f) => String(f.properties.plotId || f.properties.fieldName);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const fmt = (v, d = 2) => (v === null || v === undefined ? "–" : typeof v === "number" ? (+v.toFixed(d)).toLocaleString("es-ES") : esc(v));
+
+// ---------- mapa ----------
+const map = L.map("map", { zoomControl: true, preferCanvas: false });
+L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+  maxZoom: 19, attribution: "Imagery © Esri, Maxar, Earthstar Geographics",
+}).addTo(map);
+map.createPane("soil").style.zIndex = 390;
+S.overlays.addTo(map);
+
+function outlineStyle(id) {
+  const lay = layerFor(id);
+  const sel = S.selected === id;
+  const style = { color: sel ? "#7cc4ff" : "#ffffff", weight: sel ? 3 : 1.4, opacity: 0.95,
+                  fillOpacity: 0.01, fillColor: "#000", dashArray: null };
+  if (lay && lay.status !== "ok") Object.assign(style, { fillOpacity: 0.35, dashArray: "4 4",
+                                                          color: sel ? "#7cc4ff" : "#f0b429" });
+  if (!S.results.has(id)) Object.assign(style, { opacity: 0.5, dashArray: "2 4" });
+  return style;
+}
+
+// ---------- datos ----------
+async function init() {
+  const [params, sources, fc] = await Promise.all([
+    fetch("/parameters").then((r) => r.json()),
+    fetch("/sources").then((r) => r.json()),
+    fetch("/fields.geojson").then((r) => r.json()),
+  ]);
+  S.params = params; S.sources = sources;
+  S.features = fc.features.filter((f) => f.properties.isArchived !== true && f.geometry);
+
+  const offered = new Set(sources.flatMap((s) => s.parameters));
+  $("param").innerHTML = Object.entries(params).filter(([k]) => offered.has(k))
+    .map(([k, v]) => `<option value="${k}">${esc(v.description)} (${esc(v.unit)})</option>`).join("");
+  $("param").value = S.param;
+  fillSources();
+
+  const group = L.featureGroup();
+  for (const f of S.features) {
+    const id = fid(f);
+    const lyr = L.geoJSON(f, { style: () => outlineStyle(id) });
+    lyr.on("click", () => select(id));
+    lyr.bindTooltip(esc(f.properties.fieldName || id), { sticky: true, direction: "top", opacity: 0.85 });
+    lyr.addTo(group);
+    S.outlines.set(id, lyr);
+  }
+  group.addTo(map);
+  map.fitBounds(group.getBounds(), { padding: [20, 20] });
+  renderInfo();
+  loadAll();
+}
+
+function fillSources() {
+  const avail = S.sources.filter((s) => s.parameters.includes(S.param));
+  $("source").innerHTML = avail.map((s) => `<option value="${s.name}">${esc(s.title)}</option>`).join("");
+  if (!avail.some((s) => s.name === S.source)) S.source = avail[0]?.name;
+  $("source").value = S.source;
+}
+
+// Carga por campo (4 en paralelo), empezando por los más cercanos al centro del mapa.
+async function loadAll() {
+  const c = map.getCenter();
+  const queue = [...S.features].sort((a, b) => dist(a) - dist(b));
+  function dist(f) { const ll = L.geoJSON(f).getBounds().getCenter(); return ll.distanceTo(c); }
+  const worker = async () => {
+    while (queue.length) {
+      const f = queue.shift();
+      try {
+        const r = await fetch("/soil/layers", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fields: { type: "FeatureCollection", features: [f] } }),
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        for (const fr of data.fields) { S.results.set(fr.field_id, fr); drawField(fr.field_id); }
+      } catch (e) { S.failed++; console.error(fid(f), e); }
+      S.done++; progress();
+    }
+  };
+  progress();
+  await Promise.all([worker(), worker(), worker(), worker()]);
+}
+
+function progress() {
+  const n = S.features.length;
+  $("progressBar").style.width = `${(100 * S.done) / n}%`;
+  $("progressText").textContent = S.done < n
+    ? `Cargando campos… ${S.done}/${n}` : `${n} campos cargados` + (S.failed ? ` · ${S.failed} con error` : "");
+  if (S.done === n || S.done % 4 === 0) { renderLegend(); if (!S.selected) renderInfo(); }
+}
+
+function layerFor(id, param = S.param, source = S.source) {
+  const r = S.results.get(id);
+  return r?.layers.find((l) => l.parameter === param && l.source === source);
+}
+
+// ---------- capas ----------
+const imgs = new Map();
+function drawField(id) {
+  if (imgs.has(id)) { S.overlays.removeLayer(imgs.get(id)); imgs.delete(id); }
+  const lay = layerFor(id);
+  if (lay && lay.status === "ok" && lay.png_url) {
+    const b = S.results.get(id).bounds;
+    const img = L.imageOverlay(lay.png_url, b, { pane: "soil", opacity: 0.92, className: "soil-img" });
+    img.addTo(S.overlays); imgs.set(id, img);
+  }
+  S.outlines.get(id)?.setStyle(outlineStyle(id));
+}
+function redrawAll() { for (const id of S.outlines.keys()) drawField(id); renderLegend(); renderInfo(); }
+
+$("param").onchange = (e) => { S.param = e.target.value; fillSources(); redrawAll(); };
+$("source").onchange = (e) => { S.source = e.target.value; redrawAll(); };
+
+// ---------- leyenda ----------
+function renderLegend() {
+  const p = S.params[S.param];
+  const layers = [...S.results.keys()].map((id) => layerFor(id)).filter((l) => l?.status === "ok");
+  const cats = new Map();
+  for (const l of layers) for (const c of l.colormap?.categories || []) cats.set(c.value, c.color);
+  let html;
+  if (cats.size || p.colormap.min === null) {
+    html = cats.size ? `<div class="cats">${[...cats].sort().map(([v, col]) =>
+      `<span class="cat"><span class="sw" style="background:${col}"></span>${esc(v)}</span>`).join("")}</div>`
+      : `<div class="small">Sin datos todavía para esta capa</div>`;
+  } else {
+    const cm = layers[0]?.colormap || p.colormap;
+    html = `<img src="/legend/${cm.name}.png" alt="">
+      <div class="ticks"><span>${fmt(cm.min, 1)}</span><span>${fmt((cm.min + cm.max) / 2, 1)}</span><span>${fmt(cm.max, 1)} ${esc(p.unit)}</span></div>`;
+  }
+  $("legendBody").innerHTML = `<div class="small" style="margin-bottom:6px">${esc(p.description)} · ${esc(p.unit)}</div>` + html;
+}
+
+// ---------- panel de información ----------
+function select(id) {
+  const prev = S.selected; S.selected = id === prev ? null : id;
+  if (prev) S.outlines.get(prev)?.setStyle(outlineStyle(prev));
+  if (S.selected) S.outlines.get(S.selected).setStyle(outlineStyle(S.selected));
+  renderInfo();
+}
+
+function statsBlock(st, unit) {
+  if (st.min === null || st.min === undefined) {
+    const cats = st.categories ? Object.entries(st.categories).map(([k, v]) => `${esc(k)} ×${v}`).join(", ") : "";
+    return cats ? `<div class="small" style="margin-top:6px">${cats}</div>` : "";
+  }
+  return `<div class="stats"><div><b>${fmt(st.min)}</b><span>mín</span></div>
+    <div><b>${fmt(st.mean)}</b><span>media</span></div><div><b>${fmt(st.max)}</b><span>máx</span></div></div>`;
+}
+
+function renderInfo() {
+  const p = S.params[S.param]; if (!p) return;
+  const src = S.sources.find((s) => s.name === S.source);
+  if (!S.selected) {
+    const ls = [...S.results.keys()].map((id) => layerFor(id)).filter(Boolean);
+    const cnt = { ok: 0, no_coverage: 0, error: 0 };
+    ls.forEach((l) => cnt[l.status]++);
+    $("infoTitle").textContent = "Granja";
+    $("infoBody").innerHTML = `
+      <table class="kv">
+        <tr><td>Capa</td><td>${esc(p.description)}</td></tr>
+        <tr><td>Fuente</td><td>${esc(src?.title)}</td></tr>
+        <tr><td>Cobertura</td><td>${esc(src?.coverage)}</td></tr>
+        <tr><td>Resolución</td><td>${esc(src?.resolution)}</td></tr>
+        <tr><td>Campos con dato</td><td><span class="badge b-ok">${cnt.ok}</span></td></tr>
+        <tr><td>Sin cobertura</td><td><span class="badge b-no_coverage">${cnt.no_coverage}</span></td></tr>
+        ${cnt.error ? `<tr><td>Con error</td><td><span class="badge b-error">${cnt.error}</span></td></tr>` : ""}
+      </table>
+      ${cnt.no_coverage && S.source === "lbeg" ? `<div class="notice">LBEG solo cubre Niedersachsen: los campos de Sachsen-Anhalt aparecen rayados en amarillo.</div>` : ""}
+      <div class="prov">${esc(src?.notes)}</div>
+      <div class="small" style="margin-top:8px">Haz clic en un campo para ver su detalle.</div>`;
+    return;
+  }
+  const r = S.results.get(S.selected);
+  const f = S.features.find((x) => fid(x) === S.selected);
+  $("infoTitle").textContent = f?.properties.fieldName || S.selected;
+  if (!r) { $("infoBody").innerHTML = `<div class="small">Cargando este campo…</div>`; return; }
+  const lay = layerFor(S.selected);
+  if (!lay) {
+    $("infoBody").innerHTML = `<div class="small">${esc(src?.title)} no ofrece ${esc(p.description)}.</div>`;
+    return;
+  }
+  const sc = Object.entries(lay.status_counts || {}).map(([k, v]) => `<span class="badge b-${k}">${k} ${v}</span>`).join(" ");
+  $("infoBody").innerHTML = `
+    <table class="kv">
+      <tr><td>Superficie</td><td>${fmt(r.area_ha)} ha · ${r.n_points} puntos (25 m)</td></tr>
+      <tr><td>Estado</td><td><span class="badge b-${lay.status}">${lay.status}</span></td></tr>
+      <tr><td>Cobertura</td><td>${fmt(lay.stats.coverage_pct, 1)} % de los puntos</td></tr>
+      <tr><td>Puntos</td><td>${sc}</td></tr>
+    </table>
+    ${lay.status === "ok" ? statsBlock(lay.stats, lay.unit) : ""}
+    ${lay.message ? `<div class="notice ${lay.status === "error" ? "err" : ""}">${esc(lay.message)}</div>` : ""}
+    <div class="prov"><b>Procedencia:</b> ${esc(lay.provenance.source)}<br>${esc(lay.provenance.detail)}
+      <br>${esc(lay.provenance.resolution)}<br>${esc(lay.provenance.notes)}</div>`;
+}
+
+// ---------- hover ----------
+async function getGrid(url) {
+  if (!S.grids.has(url)) S.grids.set(url, fetch(url).then((r) => r.json()).then((g) => (S.grids.set(url, g), g)));
+  const g = S.grids.get(url);
+  return g instanceof Promise ? null : g;
+}
+
+let hoverTick = 0;
+map.on("mousemove", async (e) => {
+  const tick = ++hoverTick;
+  const { lat, lng } = e.latlng;
+  const p = S.params[S.param];
+  for (const [id, r] of S.results) {
+    const [[s, w], [n, ea]] = r.bounds;
+    if (lat < s || lat > n || lng < w || lng > ea) continue;
+    const lay = layerFor(id);
+    if (!lay) continue;
+    const name = S.features.find((x) => fid(x) === id)?.properties.fieldName || id;
+    if (lay.status !== "ok") {
+      if (!L.geoJSON(S.features.find((x) => fid(x) === id)).getBounds().contains(e.latlng)) continue;
+      $("hover").innerHTML = `<span class="badge b-${lay.status}">${lay.status === "no_coverage" ? "sin cobertura" : "error"}</span>`;
+      $("hoverField").textContent = `${name} · ${lay.message || ""}`;
+      return;
+    }
+    const g = await getGrid(lay.grid_url);
+    if (tick !== hoverTick || !g) return;
+    const col = Math.floor(((lng - w) / (ea - w)) * g.width);
+    const row = Math.floor(((n - lat) / (n - s)) * g.height);
+    const v = g.values[row]?.[col];
+    if (v === null || v === undefined) continue;
+    $("hover").innerHTML = `${fmt(v)} <span class="u">${esc(typeof v === "number" ? p.unit : "")}</span>`;
+    $("hoverField").textContent = `${name} · ${S.sources.find((x) => x.name === S.source)?.title}`;
+    return;
+  }
+  if (tick === hoverTick) { $("hover").innerHTML = `<span class="small">Fuera de los campos</span>`; $("hoverField").textContent = ""; }
+});
+
+init().catch((e) => { $("progressText").textContent = "Error cargando la UI: " + e.message; console.error(e); });
+</script>
+</body>
+</html>

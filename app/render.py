@@ -56,6 +56,16 @@ def _raster(field: Field, cells: np.ndarray, ix0: int, iy0: int, px_m: float):
     return out, W, H
 
 
+def cat_color_index(value: str) -> int:
+    """Índice tab20 estable por categoría: el mismo texto tiene el mismo color en todos los campos."""
+    return int(hashlib.md5(value.encode("utf-8")).hexdigest()[:8], 16) % 20
+
+
+def cat_color(value: str) -> str:
+    rgb = colormaps["tab20"](cat_color_index(value) / 19)[:3]
+    return "#%02x%02x%02x" % tuple(int(255 * x) for x in rgb)
+
+
 def _fill_border(cells: np.ndarray, exists: np.ndarray, rings: int = 2) -> np.ndarray:
     """Celdas sin punto de rejilla (borde del polígono) toman el valor de una vecina.
 
@@ -110,8 +120,9 @@ def render_layer(field: Field, rows: list[dict], source: str, parameter: str,
         name = cmap or meta["cmap"]
         norm = np.clip((img - lo) / ((hi - lo) or 1), 0, 1)
     else:
-        lo, hi, name = 0, max(len(categories) - 1, 0), "tab20"
-        norm = (img % 20) / 19
+        lo, hi, name = 0, 19, "tab20"
+        lut = np.array([cat_color_index(c) for c in categories] or [0], dtype=float)
+        norm = np.where(np.isnan(img), 0, lut[np.nan_to_num(img).astype(int)]) / 19
     rgba = (colormaps[name](np.nan_to_num(norm)) * 255).astype(np.uint8)
     rgba[..., 3] = np.where(np.isnan(img), 0, 235)
 
@@ -135,9 +146,7 @@ def render_layer(field: Field, rows: list[dict], source: str, parameter: str,
 
     colormap = {"name": name, "min": lo, "max": hi}
     if categories:
-        cm = colormaps["tab20"]
-        colormap["categories"] = [{"value": c, "color": "#%02x%02x%02x" % tuple(int(255 * x) for x in cm((i % 20) / 19)[:3])}
-                                  for i, c in enumerate(categories)]
+        colormap["categories"] = [{"value": c, "color": cat_color(c)} for c in categories]
     return {
         "png_url": f"/renders/{safe(field.field_id)}/{base}.png?v={v}",
         "grid_url": f"/renders/{safe(field.field_id)}/{base}.json?v={v}",
