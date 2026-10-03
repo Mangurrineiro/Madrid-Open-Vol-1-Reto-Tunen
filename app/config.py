@@ -48,4 +48,16 @@ PARAMETERS: dict[str, dict] = {
     "nfk_disagreement":  {"unit": "mm/dm", "min": 0, "max": None, "cmap": "magma", "desc": "Desacuerdo de nFK entre fuentes (máx − mín)"},
     "clay_conflict": {"unit": "0/1", "min": 0, "max": 1, "cmap": "RdYlGn_r",
                       "desc": "Conflicto: arcilla SoilGrids > partículas finas máx. de la Bodenschätzung (imposible)"},
+    # Añadidos por app/analysis.py (UI): clase KA5 de BÜK200, σ del modelo y prioridad de muestreo.
+    "ka5_class": {"unit": "texto", "min": None, "max": None, "cmap": "tab20", "desc": "Bodenart KA5 dominante (BÜK200, horizonte superior)"},
+    "clay_sigma": {"unit": "%", "min": 0, "max": None, "cmap": "magma", "desc": "σ del modelo de la arcilla combinada"},
+    "sand_sigma": {"unit": "%", "min": 0, "max": None, "cmap": "magma", "desc": "σ del modelo de la arena combinada"},
+    "silt_sigma": {"unit": "%", "min": 0, "max": None, "cmap": "magma", "desc": "σ del modelo del limo combinado"},
+    "soc_sigma":  {"unit": "g/kg", "min": 0, "max": None, "cmap": "magma", "desc": "σ del modelo del carbono orgánico combinado"},
+    "nfk_sigma":  {"unit": "mm/dm", "min": 0, "max": None, "cmap": "magma", "desc": "σ del modelo de la nFK combinada"},
+    "sampling_priority": {"unit": "0-1", "min": 0, "max": 1, "cmap": "RdYlGn_r",
+                          "desc": "Prioridad de muestreo: desacuerdo normalizado entre fuentes + conflicto (UI: fiabilidad = 100·(1−p))"},
 }
+
+ANALYSIS_PARAMETERS = ["ka5_class", "clay_sigma", "sand_sigma", "silt_sigma", "soc_sigma", "nfk_sigma",
+                       "sampling_priority"]

@@ -26,3 +26,6 @@ Thumbs.db
 data/out/
 data/renders/
 data/cache/_stale/
+
+# Capturas de los tests de UI (para la presentación; no se versionan)
+/out/

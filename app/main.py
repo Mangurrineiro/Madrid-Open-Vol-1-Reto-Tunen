@@ -4,6 +4,9 @@ API FastAPI.
   uvicorn app.main:app --reload
 
 POST /soil/layers   {"fields": FeatureCollection, "parameters": [...]?, "sources": [...]?}
+GET  /soil/demo     /soil/layers sobre la granja de ejemplo (+ name, featured); guardado en data/out/demo.json
+GET  /soil/fields/{id}/points    valores por punto y fuente (inspector de la UI)
+GET  /soil/fields/{id}/sampling  puntos de muestreo sugeridos con su motivo
 GET  /sources       matriz de fuentes (nombre, parámetros, cobertura, resolución, notas)
 GET  /parameters    unidad, rango del colormap y descripción
 POST /refresh       {"source": X?, "fields": FeatureCollection?} vacía la caché y recalcula
@@ -25,8 +28,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import cache
-from .config import FIELDS_GEOJSON, PARAMETERS, RENDERS, STATIC
+from . import analysis, cache
+from .config import ANALYSIS_PARAMETERS, DATA, FIELDS_GEOJSON, PARAMETERS, RENDERS, STATIC
 from .fields import parse_fields
 from .pipeline import run_field
 from .render import layer_stats, layer_status, render_layer
@@ -36,6 +39,7 @@ app = FastAPI(title="Tunen Soil Aggregation API", version="0.1")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 RENDERS.mkdir(parents=True, exist_ok=True)
 app.mount("/renders", StaticFiles(directory=RENDERS), name="renders")
+app.mount("/static", StaticFiles(directory=STATIC), name="static")      # UI: css/, js/, dev_samples/
 
 
 @app.get("/", include_in_schema=False)
@@ -75,9 +79,35 @@ def soil_layers(req: LayersRequest) -> dict:
     if bad:
         raise HTTPException(400, f"parámetros desconocidos: {bad}; disponibles: {list(PARAMETERS)}")
 
+    fields = _layers(parse_fields(req.fields), req.sources, req.parameters)
+    for f in fields:
+        f.pop("_score")
+    return {"fields": fields}
+
+
+# Campos y filas ya calculados (los usan /points y /sampling sin recalcular)
+_FIELDS: dict[str, object] = {}
+_ROWS: dict[str, list[dict]] = {}
+
+
+def _field_rows(field, sources=None, parameters=None) -> list[dict]:
+    """run_field + capas de app/analysis.py (ka5_class, *_sigma, sampling_priority)."""
+    extra_wanted = parameters is None or bool(set(parameters) & set(ANALYSIS_PARAMETERS))
+    base_params = None if parameters and extra_wanted else parameters
+    rows = run_field(field, sources, base_params)
+    if extra_wanted:
+        rows += analysis.extra_rows(field, rows)
+    if not sources and not parameters:
+        _FIELDS[field.field_id], _ROWS[field.field_id] = field, rows
+    if parameters:
+        rows = [r for r in rows if r["parameter"] in parameters]
+    return rows
+
+
+def _layers(fields, sources=None, parameters=None) -> list[dict]:
     out = []
-    for field in parse_fields(req.fields):
-        rows = run_field(field, req.sources, req.parameters)
+    for field in fields:
+        rows = _field_rows(field, sources, parameters)
         groups: dict[tuple[str, str], list[dict]] = {}
         for r in rows:
             groups.setdefault((r["source"], r["parameter"]), []).append(r)
@@ -102,10 +132,60 @@ def soil_layers(req: LayersRequest) -> dict:
                         (len(json.loads(r["original"])) for r in rs if r["status"] == "ok"), default=0)
             layers.append(layer)
         lon_w, lat_s, lon_e, lat_n = field.geom.bounds
+        summary = analysis.field_summary(field, rows)
         out.append({"field_id": field.field_id, "name": field.name, "area_ha": round(field.area_ha, 2),
                     "n_points": len(field.grid), "bounds": [[lat_s, lon_w], [lat_n, lon_e]],
-                    "layers": layers})
-    return {"fields": out}
+                    "geometry": json.loads(json.dumps(field.geom.__geo_interface__)),
+                    "state": summary["state"], "sources": summary["sources"],
+                    "reliability_index": summary["reliability_index"],
+                    "sampling": analysis.sampling_points(field, rows),
+                    "layers": layers, "_score": summary["_score"], "conflict_share": summary["conflict_share"]})
+    return out
+
+
+DEMO_JSON = DATA / "out" / "demo.json"
+_demo_lock = threading.Lock()
+
+
+@app.get("/soil/demo")
+def soil_demo(refresh: bool = False) -> dict:
+    """Todas las capas de la granja de ejemplo. Primera vez ~minutos (render); luego desde disco."""
+    with _demo_lock:
+        if DEMO_JSON.exists() and not refresh:
+            return json.loads(DEMO_JSON.read_text(encoding="utf-8"))
+        fc = json.loads(FIELDS_GEOJSON.read_text(encoding="utf-8"))
+        fields = _layers(parse_fields(fc))
+        feat = analysis.featured([{"field_id": f["field_id"], "name": f["name"], "state": f["state"],
+                                   "reliability_index": f["reliability_index"], "_score": f["_score"],
+                                   "conflict_share": f["conflict_share"]} for f in fields])
+        for f in fields:
+            f.pop("_score")
+        res = {"name": "LuF Seggerde", "featured": feat, "fields": fields}
+        DEMO_JSON.parent.mkdir(parents=True, exist_ok=True)
+        DEMO_JSON.write_text(json.dumps(res, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        return res
+
+
+def _rows_for(field_id: str) -> tuple[object, list[dict]]:
+    if field_id not in _ROWS:
+        fc = json.loads(FIELDS_GEOJSON.read_text(encoding="utf-8"))
+        field = next((f for f in parse_fields(fc) if f.field_id == field_id), _FIELDS.get(field_id))
+        if field is None:
+            raise HTTPException(404, f"campo desconocido: {field_id} (envíalo antes a POST /soil/layers)")
+        _field_rows(field)
+    return _FIELDS[field_id], _ROWS[field_id]
+
+
+@app.get("/soil/fields/{field_id}/points")
+def field_points(field_id: str) -> dict:
+    field, rows = _rows_for(field_id)
+    return {"field_id": field_id, "points": analysis.point_table(field, rows)}
+
+
+@app.get("/soil/fields/{field_id}/sampling")
+def field_sampling(field_id: str, k: int | None = None) -> dict:
+    field, rows = _rows_for(field_id)
+    return {"field_id": field_id, "points": analysis.sampling_points(field, rows, k)}
 
 
 @app.get("/sources")
