@@ -472,16 +472,42 @@ class CopernicusDEM(Source):
                                "notes": self.notes, "resolution": f"{field.grid.step / HS_FINE:g} m (DEM bilinear)"}}
 
 
-def terrain_summary(rows: list[dict]) -> dict | None:
-    """Resumen de terreno de un campo (slope_p95, no el máximo: el DSM da picos en setos y árboles)."""
-    def vals(p):
-        return np.array([r["value"] for r in rows if r["source"] == NAME and r["parameter"] == p
-                         and r["status"] == "ok" and r["value"] is not None], dtype=object)
-    e, s, a = vals("elevation").astype(float), vals("slope").astype(float), vals("aspect")
-    if not len(e):
+EDGE_BUFFER_M = 40.0      # franja del borde excluida de las estadísticas de pendiente (setos/árboles en el DSM)
+MIN_INTERIOR = 10         # con menos puntos interiores se usan todos
+
+
+def terrain_summary(rows: list[dict], field=None) -> dict | None:
+    """Resumen de terreno de un campo.
+
+    Pendiente: slope_mean y slope_p95 (no el máximo) sin la franja de EDGE_BUFFER_M m del borde, porque el DSM
+    convierte setos y árboles del linde en pendiente aparente. Los valores sin filtrar quedan en *_all.
+    Si el campo es tan estrecho que quedan menos de MIN_INTERIOR puntos interiores, se usan todos.
+    """
+    def ok(p):
+        return [r for r in rows if r["source"] == NAME and r["parameter"] == p
+                and r["status"] == "ok" and r["value"] is not None]
+    er, sr, ar = ok("elevation"), ok("slope"), ok("aspect")
+    if not er:
         return None
-    return {"elev_min": round(float(e.min()), 1), "elev_max": round(float(e.max()), 1),
-            "elev_mean": round(float(e.mean()), 1), "local_relief": round(float(e.max() - e.min()), 1),
-            "slope_mean": round(float(s.mean()), 1) if len(s) else None,
-            "slope_p95": round(float(np.percentile(s, 95)), 1) if len(s) else None,
-            "dominant_aspect": Counter(a.tolist()).most_common(1)[0][0] if len(a) else None}
+    e = np.array([r["value"] for r in er], float)
+    s = np.array([r["value"] for r in sr], float)
+    a = [r["value"] for r in ar]
+    s_in, buffer_m = s, None
+    if field is not None and len(sr):
+        g = field.grid
+        pid = np.array([r["point_id"] for r in sr])
+        d = shapely.distance(field.geom_utm.boundary, shapely.points(g.x[pid], g.y[pid]))
+        inner = d >= EDGE_BUFFER_M
+        if inner.sum() >= MIN_INTERIOR:
+            s_in, buffer_m = s[inner], EDGE_BUFFER_M
+
+    def r1(v):
+        return round(float(v), 1)
+    return {"elev_min": r1(e.min()), "elev_max": r1(e.max()), "elev_mean": r1(e.mean()),
+            "local_relief": r1(e.max() - e.min()),
+            "slope_mean": r1(s_in.mean()) if len(s_in) else None,
+            "slope_p95": r1(np.percentile(s_in, 95)) if len(s_in) else None,
+            "slope_mean_all": r1(s.mean()) if len(s) else None,
+            "slope_p95_all": r1(np.percentile(s, 95)) if len(s) else None,
+            "slope_edge_buffer_m": buffer_m,
+            "dominant_aspect": Counter(a).most_common(1)[0][0] if a else None}

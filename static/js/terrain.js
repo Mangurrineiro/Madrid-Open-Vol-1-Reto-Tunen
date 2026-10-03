@@ -114,7 +114,9 @@ export function terrainCard(t) {
       </div>
       ${compass(t.dominant_aspect)}
     </div>
-    <p class="note tr-note">Surface model: trees and hedges at field edges can add apparent slope.</p>
+    <p class="note tr-note">${t.slope_edge_buffer_m
+    ? `Slope figures leave out a ${t.slope_edge_buffer_m} m strip along the field edge, where hedges and trees in the surface model add apparent slope (whole field: mean ${r1(t.slope_mean_all)}°, 95th pct ${r1(t.slope_p95_all)}°).`
+    : 'Surface model: trees and hedges at field edges can add apparent slope.'}</p>
   </section>`;
 }
 

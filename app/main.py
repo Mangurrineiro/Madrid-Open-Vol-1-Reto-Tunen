@@ -155,7 +155,7 @@ def _layers(fields, sources=None, parameters=None) -> list[dict]:
             if not parameters or "hillshade" in parameters:
                 layers.append(terrain.hillshade_layer(field))
             from .sources.copernicus_dem import terrain_summary
-            extra["terrain"] = terrain_summary(rows)
+            extra["terrain"] = terrain_summary(rows, field)
         lon_w, lat_s, lon_e, lat_n = field.geom.bounds
         summary = analysis.field_summary(field, rows)
         out.append({"field_id": field.field_id, "name": field.name, "area_ha": round(field.area_ha, 2),
