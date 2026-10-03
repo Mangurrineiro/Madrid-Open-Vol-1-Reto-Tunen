@@ -25,3 +25,4 @@ Thumbs.db
 # Salidas generadas por el backend (la caché data/cache SÍ se versiona: demo sin red)
 data/out/
 data/renders/
+data/cache/_stale/

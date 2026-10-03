@@ -115,8 +115,10 @@ def render_layer(field: Field, rows: list[dict], source: str, parameter: str,
     # --- PNG ---
     img, W, H = _raster(field, cells, ix0, iy0, PNG_PX_M)
     if numeric:
-        lo = meta["min"] if vmin is None else vmin
+        lo = (meta["min"] or 0) if vmin is None else vmin
         hi = meta["max"] if vmax is None else vmax
+        if hi is None:                      # p. ej. desacuerdo: 0..máximo de la capa
+            hi = float(np.nanmax(vals)) if np.any(~np.isnan(vals)) and np.nanmax(vals) > lo else lo + 1
         name = cmap or meta["cmap"]
         norm = np.clip((img - lo) / ((hi - lo) or 1), 0, 1)
     else:

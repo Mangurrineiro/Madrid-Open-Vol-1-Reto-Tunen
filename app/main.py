@@ -6,12 +6,17 @@ API FastAPI.
 POST /soil/layers   {"fields": FeatureCollection, "parameters": [...]?, "sources": [...]?}
 GET  /sources       matriz de fuentes (nombre, parámetros, cobertura, resolución, notas)
 GET  /parameters    unidad, rango del colormap y descripción
+POST /refresh       {"source": X?, "fields": FeatureCollection?} vacía la caché y recalcula
+GET  /refresh       estado del último refresco
 GET  /              UI (static/index.html);  GET /fields.geojson  campos de la granja
 /renders/...        PNG y grid JSON generados
 """
 
 from __future__ import annotations
 
+import json
+import threading
+import time
 from collections import Counter
 
 from fastapi import FastAPI, HTTPException
@@ -20,6 +25,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from . import cache
 from .config import FIELDS_GEOJSON, PARAMETERS, RENDERS, STATIC
 from .fields import parse_fields
 from .pipeline import run_field
@@ -91,6 +97,9 @@ def soil_layers(req: LayersRequest) -> dict:
                      }}
             if status == "ok":
                 layer.update({k: v for k, v in render_layer(field, rs, source, parameter).items() if k != "size"})
+                if parameter.endswith("_disagreement"):
+                    layer["stats"]["n_sources_max"] = max(
+                        (len(json.loads(r["original"])) for r in rs if r["status"] == "ok"), default=0)
             layers.append(layer)
         lon_w, lat_s, lon_e, lat_n = field.geom.bounds
         out.append({"field_id": field.field_id, "name": field.name, "area_ha": round(field.area_ha, 2),
@@ -125,3 +134,58 @@ def legend(cmap: str):
     buf = io.BytesIO()
     Image.fromarray(rgba, "RGBA").save(buf, "PNG")
     return Response(buf.getvalue(), media_type="image/png", headers={"Cache-Control": "max-age=86400"})
+
+
+class RefreshRequest(BaseModel):
+    source: str | None = None
+    fields: dict | None = None
+
+
+REFRESH = {"state": "idle"}
+_refresh_lock = threading.Lock()
+
+
+@app.post("/refresh")
+def refresh(req: RefreshRequest) -> dict:
+    """Vacía la caché de una fuente (o de todas) y recalcula en segundo plano.
+
+    La caché anterior se conserva en data/cache/_stale/ y se reutiliza si la red falla.
+    """
+    if req.source and req.source not in SOURCES:
+        raise HTTPException(400, f"fuente desconocida: {req.source}; disponibles: {list(SOURCES)}")
+    if not _refresh_lock.acquire(blocking=False):
+        raise HTTPException(409, "ya hay un refresco en curso (GET /refresh)")
+    try:
+        fc = req.fields or json.loads(FIELDS_GEOJSON.read_text(encoding="utf-8"))
+        fields = parse_fields(fc)
+        cleared = cache.clear(req.source)
+    except Exception:
+        _refresh_lock.release()
+        raise
+    sources = [req.source] if req.source and req.source != "derived" else None
+    REFRESH.clear()
+    REFRESH.update(state="running", source=req.source or "todas", cleared=cleared, total=len(fields),
+                   done=0, errors={}, started=time.strftime("%H:%M:%S"))
+
+    def job():
+        try:
+            for f in fields:
+                rows = run_field(f, sources)
+                n_err = sum(r["status"] == "error" for r in rows)
+                if n_err:
+                    REFRESH["errors"][f.field_id] = n_err
+                REFRESH["done"] += 1
+            REFRESH["state"] = "done"
+        except Exception as exc:  # noqa: BLE001
+            REFRESH.update(state="failed", error=repr(exc))
+        finally:
+            REFRESH["finished"] = time.strftime("%H:%M:%S")
+            _refresh_lock.release()
+
+    threading.Thread(target=job, daemon=True).start()
+    return dict(REFRESH)
+
+
+@app.get("/refresh")
+def refresh_status() -> dict:
+    return dict(REFRESH)

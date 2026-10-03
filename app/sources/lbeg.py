@@ -106,7 +106,7 @@ def _validate(r) -> str | None:
     if any(m in head for m in ERROR_MARKERS):
         return "service_error (503.2 u otro error dentro de HTTP 200): " + head[:200]
     try:
-        json.loads(r.content)
+        _decode(r.content)
     except ValueError:
         return "respuesta no es JSON: " + head[:200]
     return None
@@ -141,6 +141,9 @@ def query_point(x: float, y: float) -> tuple[dict | None, str, str]:
                 last = str(exc)
         BREAKER.record(False)
         print(f"  [lbeg] fallo en ({x:.0f}, {y:.0f}): {last[:160]}", flush=True)
+    old = cache.recover_stale("lbeg", "GET", url)       # versión anterior a un /refresh
+    if old:
+        return _decode(old.content), url, old.fetched_at
     return None, url, last
 
 

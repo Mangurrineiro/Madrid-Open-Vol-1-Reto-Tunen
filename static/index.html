@@ -71,6 +71,7 @@
     <select id="param"></select>
     <label for="source">Fuente</label>
     <select id="source"></select>
+    <button id="reliability" style="margin-top:12px;width:100%;padding:9px;border-radius:8px;border:1px solid var(--line);background:#2a3442;color:var(--text);cursor:pointer">Ver fiabilidad del terreno</button>
 
     <div class="card">
       <h2>Valor bajo el cursor</h2>
@@ -212,6 +213,10 @@ function redrawAll() { for (const id of S.outlines.keys()) drawField(id); render
 
 $("param").onchange = (e) => { S.param = e.target.value; fillSources(); redrawAll(); };
 $("source").onchange = (e) => { S.source = e.target.value; redrawAll(); };
+$("reliability").onclick = () => {
+  S.param = "clay_disagreement"; S.source = "derived";
+  $("param").value = S.param; fillSources(); redrawAll();
+};
 
 // ---------- leyenda ----------
 function renderLegend() {
