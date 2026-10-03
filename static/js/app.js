@@ -41,6 +41,37 @@ const state = {
 };
 window.__app = { state };
 
+// ---------- Fase 2 (opcional): si un módulo falla, la Fase 1 sigue y sus botones no aparecen ----------
+const phase2 = {};
+async function loadPhase2() {
+  try { phase2.stack = await import('./stack3d.js'); } catch (err) { console.warn('stack3d.js no disponible', err); }
+  try { phase2.texture = await import('./texture3.js'); } catch (err) { console.warn('texture3.js no disponible', err); }
+}
+const stackOpen = () => !!phase2.stack?.isOpen();
+const breakdownOpen = () => !!phase2.texture?.isOpen();
+const stackCtx = () => ({
+  panel: $('#panel'),
+  onEnterLayer: (id) => { state.layerId = id; refresh(); },
+  onMapView: () => { phase2.stack.close(); refresh(); },
+});
+const textureCtx = () => ({ panel: $('#panel'), fields: state.fields, onClose: () => refresh() });
+function openStack(fromLayer) {
+  if (!phase2.stack || state.view !== 'field') return;
+  if (breakdownOpen()) phase2.texture.close(true);
+  closeInspector();
+  hideTip();
+  phase2.stack.open(state.byId.get(state.selected), stackCtx(), { fromLayer });
+}
+function toggleBreakdown() {
+  if (!phase2.texture || state.view !== 'field') return;
+  if (breakdownOpen()) { phase2.texture.close(); return; }
+  closeInspector();
+  hideTip();
+  phase2.texture.open(state.byId.get(state.selected), textureCtx());
+  renderPanel(panelView());
+  if (state.card) { setCard(cardHtml(state.card)); if (state.lastLegend) renderLegend(state.lastLegend); }
+}
+
 // ---------- arranque ----------
 function init() {
   window.__app.map = createMap($('#map'));
@@ -65,7 +96,10 @@ function init() {
     back: () => backToFarm(),
     uncertainty: () => toggleUncertainty(),
     sampling: () => toggleSampling(),
+    stack: () => openStack(state.layerId),
+    breakdown: () => toggleBreakdown(),
   });
+  loadPhase2();
   getMap().on('mousemove', onMouseMove);
   getMap().on('mouseout', hideTip);
   getMap().on('click', () => { if (state.view === 'field') closeInspector(); });
@@ -76,6 +110,13 @@ function onKey(e) {
   if (state.view === 'landing' || e.target.closest('input, textarea') || e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key.toLowerCase();
   const n = Number(e.key);
+  if (stackOpen()) {
+    if (n >= 1 && n <= LAYERS.length) phase2.stack.enterLayer(LAYERS[n - 1].id);
+    else if (k === 'm') stackCtx().onMapView();
+    else if (k === 'b' || k === 'escape') backToFarm();
+    return;
+  }
+  if (breakdownOpen() && (k === 'b' || k === 'escape')) { phase2.texture.close(); return; }
   if (n >= 1 && n <= LAYERS.length) setLayer(LAYERS[n - 1].id);
   else if (k === 'u') toggleUncertainty();
   else if (k === 's') toggleSampling();
@@ -123,6 +164,8 @@ async function loadFile(file) {
 }
 
 function backToLanding() {
+  if (stackOpen()) phase2.stack.close(true);
+  if (breakdownOpen()) phase2.texture.close(true);
   closeInspector();
   hideTip();
   clearUncertainty();
@@ -182,6 +225,8 @@ function featuredFallback(fields) {
 
 function backToFarm() {
   if (state.view !== 'field') return;
+  if (stackOpen()) phase2.stack.close();
+  if (breakdownOpen()) phase2.texture.close(true);
   closeInspector();
   hideTip();
   clearUncertainty();
@@ -212,7 +257,10 @@ async function enterField(id) {
     duration: 0.8 });
   updateSampling();
   loadFieldExtras(f);
-  await refresh();
+  if (breakdownOpen()) phase2.texture.close(true);
+  const done = refresh();
+  if (phase2.stack) phase2.stack.open(f, stackCtx());
+  await done;
 }
 
 /** Grids auxiliares para el tooltip (fracciones derived, Ackerzahl) y puntos para el inspector. */
@@ -269,11 +317,13 @@ function panelView() {
     sources: availableSources(layer, sub, field ? [field] : state.fields), featured: state.featured,
     field, sampling: state.sampling, card: state.card,
     uncertainty: { on: state.uncertainty, available: state.unc?.available, summary: state.unc?.summary },
+    phase2: { stack: !!phase2.stack, texture: !!phase2.texture, breakdown: breakdownOpen() },
   };
 }
 
 async function refresh() {
   if (!state.fields.length || state.view === 'landing') return;
+  if (breakdownOpen() && state.layerId !== 'texture') phase2.texture.close(true);
   const view = panelView();
   const layer = currentLayer();
   hideTip();
@@ -413,7 +463,7 @@ function histogram(vals, colorOf, nb = 12) {
 }
 
 function toggleUncertainty() {
-  if (state.view !== 'field') return;
+  if (state.view !== 'field' || stackOpen() || breakdownOpen()) return;
   state.uncertainty = !state.uncertainty;
   $('#unc-toggle')?.classList.toggle('on', state.uncertainty);
   document.body.classList.toggle('unc-mode', state.uncertainty);
@@ -446,7 +496,7 @@ function applyUncertaintyPanel() {
 
 // ---------- tooltip ----------
 function onMouseMove(e) {
-  if (state.view !== 'field') return;
+  if (state.view !== 'field' || stackOpen() || breakdownOpen()) return;
   const f = state.byId.get(state.selected);
   const { lat, lng } = e.latlng;
   const overPopup = e.originalEvent?.target?.closest?.('.leaflet-popup');
@@ -528,4 +578,6 @@ async function pool(items, n, fn) {
 window.__app.enterField = enterField;
 window.__app.setLayer = setLayer;
 window.__app.toggleUncertainty = toggleUncertainty;
+window.__app.phase2 = phase2;
+window.__app.closeStack = () => { if (stackOpen()) stackCtx().onMapView(); };
 init();
