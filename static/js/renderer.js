@@ -157,3 +157,15 @@ export function renderLayer(grid, palette, fieldGeometry, options = {}) {
   if (key) cache.set(key, out);
   return out;
 }
+
+/** Valor de la celda del grid en (lat, lon), sin recorte (para tooltips). */
+export function cellValue(grid, lat, lon) {
+  if (!grid) return null;
+  const [[s, w], [n, e]] = grid.bounds;
+  if (lat < s || lat > n || lon < w || lon > e) return null;
+  const r = Math.min(grid.height - 1, Math.floor((n - lat) / (n - s) * grid.height));
+  const c = Math.min(grid.width - 1, Math.floor((lon - w) / (e - w) * grid.width));
+  return grid.values[r]?.[c] ?? null;
+}
+
+export function clearRenderCache() { cache.clear(); }
