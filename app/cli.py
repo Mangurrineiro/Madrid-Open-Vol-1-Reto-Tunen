@@ -5,7 +5,7 @@ CLI.
       Ejecuta las fuentes sobre esos campos (por nombre o plotId), imprime un resumen
       por parámetro y guarda la tabla larga en data/out/<campo>.csv
 
-  python -m app.cli warm data/fields.geojson [--source X] [--passes 3] [--wait 60]
+  python -m app.cli warm data/fields.geojson [--source X] [--passes 3] [--wait 180]
       Precarga la caché de todos los campos activos. Los campos con filas en error
       (p. ej. timeouts de LBEG, que no se cachean) se reintentan en pasadas sucesivas.
 
@@ -70,7 +70,16 @@ def cmd_test(args) -> None:
         print(f"  tabla larga -> {out.relative_to(DATA.parent)}")
 
 
-def warm(geojson, sources: list[str] | None, passes: int = 3, wait: float = 60) -> dict:
+def _wait_breaker() -> None:
+    """En precarga no conviene fallar rápido: si LBEG abrió el cortacircuitos, se espera a que se enfríe."""
+    from .sources.lbeg import BREAKER
+    if BREAKER.is_open():
+        left = BREAKER.opened_at + BREAKER.cooldown - time.time() + 1
+        print(f"  LBEG con cortacircuitos abierto: esperando {left:.0f} s…", flush=True)
+        time.sleep(max(left, 0))
+
+
+def warm(geojson, sources: list[str] | None, passes: int = 3, wait: float = 180) -> dict:
     fields = load_fields(geojson)
     todo = fields
     totals: Counter = Counter()
@@ -80,6 +89,7 @@ def warm(geojson, sources: list[str] | None, passes: int = 3, wait: float = 60) 
         totals = Counter() if k == 1 else totals
         t0 = time.time()
         for j, f in enumerate(todo, 1):
+            _wait_breaker()
             t = time.time()
             try:
                 rows = run_field(f, sources)
@@ -135,14 +145,14 @@ def main() -> None:
     w.add_argument("geojson", nargs="?", default=FIELDS_GEOJSON)
     w.add_argument("--source", action="append")
     w.add_argument("--passes", type=int, default=3)
-    w.add_argument("--wait", type=float, default=60)
+    w.add_argument("--wait", type=float, default=180)
     w.set_defaults(func=cmd_warm)
 
     r = sub.add_parser("refresh", help="vacía la caché (de una fuente o todas) y recalcula")
     r.add_argument("--source")
     r.add_argument("--geojson", default=FIELDS_GEOJSON)
     r.add_argument("--passes", type=int, default=3)
-    r.add_argument("--wait", type=float, default=60)
+    r.add_argument("--wait", type=float, default=180)
     r.set_defaults(func=cmd_refresh)
 
     args = ap.parse_args()

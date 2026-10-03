@@ -41,7 +41,10 @@ class Derived(Source):
         wanted |= {f"{p}_disagreement" for p in COMBINED if p in wanted}
         if "clay" in wanted:
             wanted.add("clay_conflict")
-        need_base = wanted | ({"clay", "sand", "silt"} if wanted & set(TEXTURE) else set())
+        # Parámetros base a combinar: los pedidos y los que piden su desacuerdo o el conflicto
+        need_base = {p for p in COMBINED if p in wanted or f"{p}_disagreement" in wanted}
+        if need_base & set(TEXTURE):
+            need_base |= set(TEXTURE)              # la normalización a 100 % necesita las tres
 
         by_point: dict[int, dict[str, list[dict]]] = {}
         for r in base_rows or []:
