@@ -84,7 +84,9 @@ def _fill_border(cells: np.ndarray, exists: np.ndarray, rings: int = 2) -> np.nd
 
 
 def render_layer(field: Field, rows: list[dict], source: str, parameter: str,
-                 vmin: float | None = None, vmax: float | None = None, cmap: str | None = None) -> dict:
+                 vmin: float | None = None, vmax: float | None = None, cmap: str | None = None,
+                 palette: dict[str, str] | None = None) -> dict:
+    """palette (opcional, solo categorías): colores fijos por valor en lugar de tab20."""
     meta = PARAMETERS[parameter]
     g = field.grid
     step = g.step
@@ -126,6 +128,10 @@ def render_layer(field: Field, rows: list[dict], source: str, parameter: str,
         lut = np.array([cat_color_index(c) for c in categories] or [0], dtype=float)
         norm = np.where(np.isnan(img), 0, lut[np.nan_to_num(img).astype(int)]) / 19
     rgba = (colormaps[name](np.nan_to_num(norm)) * 255).astype(np.uint8)
+    if palette and not numeric:
+        lut = np.array([[int(palette.get(c, "#BDBDBD")[k:k + 2], 16) for k in (1, 3, 5)] + [255]
+                        for c in categories] or [[0, 0, 0, 0]], dtype=np.uint8)
+        rgba = lut[np.nan_to_num(img).astype(int)]
     rgba[..., 3] = np.where(np.isnan(img), 0, 235)
 
     # --- grid JSON (hover) ---
@@ -148,7 +154,8 @@ def render_layer(field: Field, rows: list[dict], source: str, parameter: str,
 
     colormap = {"name": name, "min": lo, "max": hi}
     if categories:
-        colormap["categories"] = [{"value": c, "color": cat_color(c)} for c in categories]
+        colormap["categories"] = [{"value": c, "color": (palette or {}).get(c) or cat_color(c)}
+                                  for c in categories]
     return {
         "png_url": f"/renders/{safe(field.field_id)}/{base}.png?v={v}",
         "grid_url": f"/renders/{safe(field.field_id)}/{base}.json?v={v}",

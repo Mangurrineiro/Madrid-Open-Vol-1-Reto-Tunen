@@ -42,6 +42,13 @@ def run_field(field: Field, sources: list[str] | None = None,
     return rows
 
 
+def prepare_sources(fields: list[Field], sources: list[str] | None = None) -> None:
+    """Fuentes con lectura única por petición (p. ej. copernicus_dem): una sola caja para todos los campos."""
+    for name, src in SOURCES.items():
+        if hasattr(src, "prepare") and (not sources or name in sources):
+            src.prepare(fields)
+
+
 def write_csv(rows: list[dict], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="", encoding="utf-8") as f:

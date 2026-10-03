@@ -9,3 +9,7 @@ from .base import SOURCES, Source, register_source, row  # noqa: F401
 
 # Importar los módulos registra sus fuentes.
 from . import buek200, derived, lbeg, soilgrids  # noqa: F401,E402
+from ..config import ENABLE_TERRAIN  # noqa: E402
+
+if ENABLE_TERRAIN:                     # módulo adicional: capa de terreno
+    from . import copernicus_dem  # noqa: F401

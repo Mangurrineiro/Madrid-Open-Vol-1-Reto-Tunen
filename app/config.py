@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -61,3 +62,28 @@ PARAMETERS: dict[str, dict] = {
 
 ANALYSIS_PARAMETERS = ["ka5_class", "clay_sigma", "sand_sigma", "silt_sigma", "soc_sigma", "nfk_sigma",
                        "sampling_priority"]
+
+# ---------- Módulo adicional de terreno (Copernicus DEM GLO-30) ----------
+# Con ENABLE_TERRAIN=False (o la variable de entorno ENABLE_TERRAIN=0) todo funciona exactamente
+# como antes: no se registra la fuente ni se añaden parámetros ni capas.
+ENABLE_TERRAIN = os.environ.get("ENABLE_TERRAIN", "1").strip().lower() not in ("0", "false", "no", "off")
+TERRAIN_PARAMETERS = ["elevation", "elevation_rel", "slope", "aspect", "hillshade"]
+
+if ENABLE_TERRAIN:
+    PARAMETERS.update({
+        "elevation":     {"unit": "m", "min": None, "max": None, "cmap": "tunen_elevation",
+                          "desc": "Elevation above sea level (Copernicus DEM GLO-30, surface model)"},
+        "elevation_rel": {"unit": "m", "min": 0, "max": None, "cmap": "tunen_elevation",
+                          "desc": "Metres above the lowest point of the field"},
+        "slope":         {"unit": "°", "min": 0, "max": None, "cmap": "tunen_slope",
+                          "desc": "Slope in degrees (from the DEM, 2-pixel halo)"},
+        "aspect":        {"unit": "texto", "min": None, "max": None, "cmap": "tab20",
+                          "desc": "Direction the terrain faces (downhill): N, NE, E, SE, S, SW, W, NW or Flat (slope < 0.5°)"},
+        "hillshade":     {"unit": "0-255", "min": 0, "max": 255, "cmap": "gray",
+                          "desc": "Relief shading (visual only): azimuth 315°, altitude 45°, vertical exaggeration ×3"},
+        "acker_delta":   {"unit": "0-100", "min": -10, "max": 10, "cmap": "tunen_acker_delta",
+                          "desc": "Difference between the adjusted agricultural score (Ackerzahl) and the natural soil "
+                                  "score (Bodenzahl). The adjustment reflects several site factors such as climate "
+                                  "and terrain."},
+    })
+    ANALYSIS_PARAMETERS = ANALYSIS_PARAMETERS + ["acker_delta"]

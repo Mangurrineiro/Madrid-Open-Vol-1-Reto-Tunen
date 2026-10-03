@@ -29,9 +29,9 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from . import analysis, cache
-from .config import ANALYSIS_PARAMETERS, DATA, FIELDS_GEOJSON, PARAMETERS, RENDERS, STATIC
+from .config import ANALYSIS_PARAMETERS, DATA, ENABLE_TERRAIN, FIELDS_GEOJSON, PARAMETERS, RENDERS, STATIC
 from .fields import parse_fields
-from .pipeline import run_field
+from .pipeline import prepare_sources, run_field
 from .render import layer_stats, layer_status, render_layer
 from .sources import SOURCES
 
@@ -82,7 +82,21 @@ def soil_layers(req: LayersRequest) -> dict:
     fields = _layers(parse_fields(req.fields), req.sources, req.parameters)
     for f in fields:
         f.pop("_score")
-    return {"fields": fields}
+    res = {"fields": fields}
+    bg = _terrain_background()
+    if bg:
+        res["terrain_background"] = bg
+    return res
+
+
+# ---------- módulo de terreno (config.ENABLE_TERRAIN); sin él, nada de esto aparece ----------
+def _terrain_source():
+    return SOURCES.get("copernicus_dem") if ENABLE_TERRAIN else None
+
+
+def _terrain_background() -> dict | None:
+    t = _terrain_source()
+    return t.background if t is not None else None
 
 
 # Campos y filas ya calculados (los usan /points y /sampling sin recalcular)
@@ -105,6 +119,9 @@ def _field_rows(field, sources=None, parameters=None) -> list[dict]:
 
 
 def _layers(fields, sources=None, parameters=None) -> list[dict]:
+    terrain = _terrain_source()
+    if terrain is not None and (not sources or terrain.name in sources):
+        prepare_sources(fields, [terrain.name])          # una sola lectura del DEM para toda la petición
     out = []
     for field in fields:
         rows = _field_rows(field, sources, parameters)
@@ -126,11 +143,19 @@ def _layers(fields, sources=None, parameters=None) -> list[dict]:
                          "resolution": SOURCES[source].resolution,
                      }}
             if status == "ok":
-                layer.update({k: v for k, v in render_layer(field, rs, source, parameter).items() if k != "size"})
+                opts = SOURCES[source].render_opts(parameter, rs) if hasattr(SOURCES[source], "render_opts") else {}
+                layer.update({k: v for k, v in render_layer(field, rs, source, parameter, **opts).items()
+                              if k != "size"})
                 if parameter.endswith("_disagreement"):
                     layer["stats"]["n_sources_max"] = max(
                         (len(json.loads(r["original"])) for r in rs if r["status"] == "ok"), default=0)
             layers.append(layer)
+        extra = {}
+        if terrain is not None and any(r["source"] == terrain.name for r in rows):
+            if not parameters or "hillshade" in parameters:
+                layers.append(terrain.hillshade_layer(field))
+            from .sources.copernicus_dem import terrain_summary
+            extra["terrain"] = terrain_summary(rows)
         lon_w, lat_s, lon_e, lat_n = field.geom.bounds
         summary = analysis.field_summary(field, rows)
         out.append({"field_id": field.field_id, "name": field.name, "area_ha": round(field.area_ha, 2),
@@ -139,11 +164,12 @@ def _layers(fields, sources=None, parameters=None) -> list[dict]:
                     "state": summary["state"], "sources": summary["sources"],
                     "reliability_index": summary["reliability_index"],
                     "sampling": analysis.sampling_points(field, rows),
-                    "layers": layers, "_score": summary["_score"], "conflict_share": summary["conflict_share"]})
+                    "layers": layers, "_score": summary["_score"], "conflict_share": summary["conflict_share"], **extra})
     return out
 
 
-DEMO_JSON = DATA / "out" / "demo.json"
+# Con terreno se guarda aparte: así demo.json (sin terreno) no cambia al activar/desactivar el módulo
+DEMO_JSON = DATA / "out" / ("demo_terrain.json" if ENABLE_TERRAIN else "demo.json")
 _demo_lock = threading.Lock()
 
 
@@ -161,6 +187,9 @@ def soil_demo(refresh: bool = False) -> dict:
         for f in fields:
             f.pop("_score")
         res = {"name": "LuF Seggerde", "featured": feat, "fields": fields}
+        bg = _terrain_background()
+        if bg:
+            res["terrain_background"] = bg
         DEMO_JSON.parent.mkdir(parents=True, exist_ok=True)
         DEMO_JSON.write_text(json.dumps(res, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
         return res

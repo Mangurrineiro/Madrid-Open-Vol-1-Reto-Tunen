@@ -21,6 +21,7 @@ from collections import defaultdict
 
 import numpy as np
 
+from .config import ENABLE_TERRAIN
 from .regions import land_utm
 from .sources.base import row
 
@@ -75,9 +76,13 @@ def extra_rows(field, rows: list[dict]) -> list[dict]:
     by_point = _by_point(rows)
     has_buek = any(r["source"] == "buek200" for r in rows)
     has_derived = any(r["source"] == "derived" for r in rows)
+    has_lbeg = ENABLE_TERRAIN and any(r["source"] == "lbeg" and r["parameter"] in ("bodenzahl", "ackerzahl")
+                                      for r in rows)
     out = []
     for i in range(len(field.grid)):
         pr = by_point.get(i, {})
+        if has_lbeg:
+            out.append(_acker_delta(field, i, pr))
         if has_buek:
             ref = next((pr[("buek200", p)] for p in ("clay", "sand", "silt", "soc", "ph_cacl2")
                         if ("buek200", p) in pr), None)
@@ -110,6 +115,19 @@ def extra_rows(field, rows: list[dict]) -> list[dict]:
             out.append(row(field, i, "derived", "sampling_priority", value=round(prio, 3),
                            original=json.dumps({k: round(v, 3) for k, v in comp.items()}), provenance=prov))
     return out
+
+
+def _acker_delta(field, i: int, pr: dict) -> dict:
+    """acker_delta (lbeg, presentación) = Ackerzahl − Bodenzahl donde existen ambos."""
+    a, b = pr.get(("lbeg", "ackerzahl")), pr.get(("lbeg", "bodenzahl"))
+    prov = "LBEG Bodenschätzung (L849): ACKERZ − BODENZ"
+    if _ok(a) and _ok(b):
+        return row(field, i, "lbeg", "acker_delta", value=a["value"] - b["value"],
+                   original=json.dumps({"ackerzahl": a["value"], "bodenzahl": b["value"]}), provenance=prov)
+    ref = a or b
+    status = "error" if ref is not None and ref["status"] == "error" else "no_coverage"
+    return row(field, i, "lbeg", "acker_delta", status=status,
+               original=ref["original"] if ref else "sin Bodenschätzung en este punto", provenance=prov)
 
 
 # ---------- puntos de muestreo ----------
@@ -164,11 +182,14 @@ def sampling_points(field, rows: list[dict], k: int | None = None) -> list[dict]
 # ---------- inspector ----------
 POINT_PARAMS = ["clay", "sand", "silt", "ph_h2o", "ph_cacl2", "soc", "nfk", "bodenzahl", "ackerzahl"]
 POINT_TEXT = ["bodenart_bs", "ka5_class", "soil_type"]
+TERRAIN_POINT = [("copernicus_dem", "elevation"), ("copernicus_dem", "elevation_rel"),
+                 ("copernicus_dem", "slope"), ("copernicus_dem", "aspect"), ("lbeg", "acker_delta")]
 
 
 def point_table(field, rows: list[dict]) -> list[dict]:
     by_point = _by_point(rows)
     g = field.grid
+    terrain = [k for k in TERRAIN_POINT if any((r["source"], r["parameter"]) == k for r in rows)]
     out = []
     for i in range(len(g)):
         pr = by_point.get(i, {})
@@ -201,6 +222,8 @@ def point_table(field, rows: list[dict]) -> list[dict]:
                     "klassenzeichen": klassenzeichen, "clay_conflict": conflict,
                     "sampling_priority": None if prio is None else round(prio, 3),
                     "reliability_index": None if prio is None else round(100 * (1 - prio))})
+        for k in terrain:                  # módulo de terreno: solo si existen sus filas
+            out[-1][k[1]] = pr[k]["value"] if _ok(pr.get(k)) else None
     return out
 
 
@@ -209,7 +232,7 @@ def field_summary(field, rows: list[dict]) -> dict:
     """Fuentes con dato, estado federal (por cobertura LBEG) y puntuación de 'interés'."""
     have = defaultdict(int)
     for r in rows:
-        if r["status"] == "ok" and r["source"] != "derived":
+        if r["status"] == "ok" and r["source"] not in ("derived", "copernicus_dem"):
             have[r["source"]] += 1
     sources = sorted(have)
     prios = [r["value"] for r in rows if r["parameter"] == "sampling_priority" and _ok(r)]

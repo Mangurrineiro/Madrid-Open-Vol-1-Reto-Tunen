@@ -25,7 +25,7 @@ import numpy as np
 from . import cache
 from .config import DATA, FIELDS_GEOJSON
 from .fields import find_field, load_fields
-from .pipeline import run_field, write_csv
+from .pipeline import prepare_sources, run_field, write_csv
 from .sources import SOURCES
 
 
@@ -51,6 +51,7 @@ def summarize(rows: list[dict]) -> None:
 
 def cmd_test(args) -> None:
     fields = load_fields(args.geojson)
+    prepare_sources([find_field(fields, k) for k in args.fields], args.source or None)
     for key in args.fields:
         f = find_field(fields, key)
         print(f"\n=== {f.name} ({f.field_id}) · {f.area_ha:.2f} ha · {len(f.grid)} puntos de rejilla ===")
@@ -81,6 +82,7 @@ def _wait_breaker() -> None:
 
 def warm(geojson, sources: list[str] | None, passes: int = 3, wait: float = 180) -> dict:
     fields = load_fields(geojson)
+    prepare_sources(fields, sources)       # p. ej. copernicus_dem: una sola lectura para toda la granja
     todo = fields
     totals: Counter = Counter()
     for k in range(1, passes + 1):
