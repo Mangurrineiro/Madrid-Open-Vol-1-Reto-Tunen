@@ -14,6 +14,7 @@ import { hideTip, initTooltip, showTip, soilOrigin } from './tooltip.js';
 import { farmScale, resetScales, summarize, uncertaintyGrid, uncertaintyText } from './uncertainty.js';
 import { initDropzone, setZoneMessage, startLoading, validateGeojson } from './upload.js';
 import { ackerLine, hasTerrain, resetRelief, setRelief, terrainTip } from './terrain.js';
+import * as profile from './profile.js';
 
 const $ = (s) => document.querySelector(s);
 const DROP_HINT = 'Field boundaries as Polygon or MultiPolygon · .geojson or .json';
@@ -62,6 +63,7 @@ function openStack(fromLayer) {
   if (!phase2.stack || state.view !== 'field') return;
   if (breakdownOpen()) phase2.texture.close(true);
   closeInspector();
+  profile.close();
   hideTip();
   phase2.stack.open(state.byId.get(state.selected), stackCtx(), { fromLayer });
 }
@@ -102,11 +104,15 @@ function init() {
     stack: () => openStack(state.layerId),
     breakdown: () => toggleBreakdown(),
     relief: () => toggleRelief(),
+    profile: () => toggleProfile(),
   });
   loadPhase2();
   getMap().on('mousemove', onMouseMove);
   getMap().on('mouseout', hideTip);
-  getMap().on('click', () => { if (state.view === 'field') closeInspector(); });
+  getMap().on('click', (e) => {
+    if (profile.addPoint(e.latlng)) return;                 // perfil: clic fuera del campo → aviso
+    if (state.view === 'field') closeInspector();
+  });
   document.addEventListener('keydown', onKey);
 }
 
@@ -121,6 +127,8 @@ function onKey(e) {
     return;
   }
   if (breakdownOpen() && (k === 'b' || k === 'escape')) { phase2.texture.close(); return; }
+  if (k === 'escape' && profile.isOpen()) { profile.close(); return; }
+  if (k === 'p' && state.view === 'field') { toggleProfile(); return; }
   if (n >= 1 && n <= LAYERS.length) setLayer(LAYERS[n - 1].id);
   else if (n > LAYERS.length && n <= LAYERS.length + state.terrain.length) setLayer(state.terrain[n - LAYERS.length - 1].id);
   else if (k === 'r' && state.terrain.length) toggleRelief();
@@ -180,6 +188,7 @@ function backToLanding() {
   showSampling([]);
   Object.assign(state, { view: 'landing', selected: null, uncertainty: false, relief: false });
   resetRelief();
+  profile.close();
   document.body.classList.remove('farm', 'field-mode', 'unc-mode', 'relief-on');
   const l = $('#landing');
   l.style.removeProperty('display');
@@ -197,6 +206,7 @@ async function enterFarm(data, name) {
     featured: data.featured?.length ? data.featured : featuredFallback(data.fields),
     selected: null, uncertainty: false, sampling: false, unc: null, card: null, extras: null, points: null,
   });
+  profile.close();
   installAckerDelta(state.fields);
   state.terrain = terrainLayers(state.fields);
   if (layerById(state.layerId)?.terrain && !state.terrain.includes(layerById(state.layerId))) state.layerId = 'texture';
@@ -242,6 +252,7 @@ function backToFarm() {
   closeInspector();
   hideTip();
   clearUncertainty();
+  profile.close();
   Object.assign(state, { view: 'farm', selected: null, uncertainty: false, unc: null, card: null, extras: null, points: null });
   setSelected(null);
   document.body.classList.remove('field-mode', 'unc-mode');
@@ -253,6 +264,7 @@ function backToFarm() {
 
 // ---------- vista de campo ----------
 function onFieldClick(f, latlng) {
+  if (state.view === 'field' && profile.addPoint(latlng)) return;
   if (state.view === 'field' && state.selected === f.field_id) openInspectorAt(latlng);
   else enterField(f.field_id);
 }
@@ -262,6 +274,7 @@ async function enterField(id) {
   if (!f) return;
   closeInspector();
   clearUncertainty();
+  if (profile.isOpen() && state.selected !== id) profile.close();
   Object.assign(state, { view: 'field', selected: id, unc: null, card: null, extras: null, points: null });
   setSelected(id);
   document.body.classList.add('field-mode');
@@ -333,13 +346,26 @@ function panelView() {
     field, sampling: state.sampling, card: state.card,
     uncertainty: { on: state.uncertainty, available: state.unc?.available, summary: state.unc?.summary },
     phase2: { stack: !!phase2.stack, texture: !!phase2.texture, breakdown: breakdownOpen() },
-    terrain: hasTerrain(state.data) ? { layers: state.terrain, relief: state.relief } : null,
+    terrain: hasTerrain(state.data) ? { layers: state.terrain, relief: state.relief,
+      profile: state.view === 'field' && profile.canProfile(field), profileOpen: profile.isOpen() } : null,
   };
 }
 
 // ---------- relieve sombreado (módulo de terreno) ----------
 function applyRelief() {
   setRelief({ on: state.relief, view: state.view, data: state.data, field: state.byId.get(state.selected) });
+}
+
+function toggleProfile() {
+  if (state.view !== 'field' || stackOpen() || breakdownOpen()) return;
+  const f = state.byId.get(state.selected);
+  if (!profile.canProfile(f)) return;
+  if (profile.isOpen()) profile.close();
+  else {
+    closeInspector();
+    profile.start(f);
+    document.querySelectorAll('[data-action="profile"]').forEach((b) => b.classList.add('on'));
+  }
 }
 
 function toggleRelief() {

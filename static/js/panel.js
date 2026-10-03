@@ -35,6 +35,10 @@ function layerList(view, compact) {
     <div class="layer-list ${compact ? 'compact' : ''}">${t.map((l, i) => item(l, LAYERS.length + i)).join('')}</div></div>`;
 }
 
+const profileButton = (view) => `<section class="panel-section profile-row">
+  <button class="btn-ghost profile-btn ${view.terrain.profileOpen ? 'on' : ''}" data-action="profile">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18l5-7 4 4 4-6 5 9"/><circle cx="3" cy="18" r="1.4"/><circle cx="21" cy="18" r="1.4"/></svg>
+    Draw elevation profile<kbd>P</kbd></button></section>`;
 const reliefTop = (view) => (view.terrain ? reliefSwitch(view.terrain.relief) : '');
 const reliefFoot = (view) => (view.terrain ? reliefNote() : '');
 
@@ -105,7 +109,7 @@ function renderFieldPanel(view) {
       ${view.phase2?.stack ? `<button class="btn-ghost stack-btn" data-action="stack">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg>
         Back to layer stack</button>` : ''}
-    </section>${reliefTop(view)}
+    </section>${reliefTop(view)}${view.terrain?.profile ? profileButton(view) : ''}
     <section class="panel-section">
       ${layerList(view, true)}
     </section>
@@ -129,7 +133,7 @@ function renderFieldPanel(view) {
 
 const KEYS = `<footer class="keys"><span><kbd>1-6</kbd> layers</span><span><kbd>U</kbd> uncertainty</span><span><kbd>S</kbd> sampling</span><span><kbd>B</kbd> back</span></footer>`;
 const keys = (view) => (!view.terrain ? KEYS
-  : `<footer class="keys"><span><kbd>1-${LAYERS.length + view.terrain.layers.length}</kbd> layers</span><span><kbd>U</kbd> uncertainty</span><span><kbd>R</kbd> relief</span><span><kbd>S</kbd> sampling</span><span><kbd>B</kbd> back</span></footer>`);
+  : `<footer class="keys"><span><kbd>1-${LAYERS.length + view.terrain.layers.length}</kbd> layers</span><span><kbd>U</kbd> uncertainty</span><span><kbd>R</kbd> relief</span>${view.terrain.profile ? '<span><kbd>P</kbd> profile</span>' : ''}<span><kbd>S</kbd> sampling</span><span><kbd>B</kbd> back</span></footer>`);
 
 function uncertaintyCard(view, layer) {
   if (view.uncertainty.available === undefined) return cardHtml(null);

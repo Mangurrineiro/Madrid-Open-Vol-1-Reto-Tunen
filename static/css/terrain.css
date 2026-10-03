@@ -24,3 +24,28 @@ body.relief-on .relief-note { display: block; }
 /* El interruptor de relieve no es una alerta: verde en lugar del rojo de "Show uncertainty" */
 .relief-switch.on { background: rgba(124, 179, 66, 0.13); border-color: rgba(124, 179, 66, 0.45); }
 .relief-switch.on .switch-track { background: #7CB342; }
+
+/* ---------- Perfil altimétrico (etapa 3) ---------- */
+.profile-btn { margin-top: 8px; }
+.profile-picking, .profile-picking .leaflet-interactive { cursor: crosshair !important; }
+#profile-panel { position: fixed; left: 64px; right: calc(var(--panel-w) + 32px); bottom: 16px; z-index: 1000; padding: 10px 14px 8px;
+  animation: pf-in 300ms var(--ease, ease) both; }
+@keyframes pf-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+#profile-panel .pf-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+#profile-panel .pf-head b { font-size: 14px; }
+#profile-panel .pf-sub { flex: 1; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+#profile-panel .pf-close { border: 0; background: transparent; color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer; padding: 0 4px; }
+#profile-panel .pf-close:hover { color: var(--text); }
+#profile-panel .pf-hint { padding: 14px 0 12px; font-size: 13px; color: var(--muted); }
+#profile-panel .pf-hint.warn { color: #FFAB91; }
+.pf-svg { display: block; font-family: inherit; }
+.pf-grid { stroke: rgba(255, 255, 255, 0.08); stroke-width: 1; }
+.pf-tick { font-size: 10.5px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.pf-label { font-size: 10.5px; fill: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
+.pf-ab { font-size: 11px; font-weight: 700; fill: var(--text); }
+.pf-line { fill: none; stroke: #F2D24B; stroke-width: 2; stroke-linejoin: round; }
+.pf-guide { stroke: rgba(255, 255, 255, 0.5); stroke-width: 1; stroke-dasharray: 3 3; }
+.pf-dot { fill: #C99A4E; stroke: #fff; stroke-width: 2; }
+.pf-read { font-size: 11.5px; font-weight: 600; fill: var(--text); paint-order: stroke; stroke: rgba(15, 20, 18, 0.85); stroke-width: 3px; }
+.profile-pin span { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #C99A4E; color: #fff;
+  font-size: 11px; font-weight: 800; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5); }
