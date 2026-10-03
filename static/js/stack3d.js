@@ -110,7 +110,9 @@ function baseCanvas(field, w, h) {
   const size = `${Math.min(1024, w * 2)},${Math.min(1024, h * 2)}`;
   img.onload = () => paint(img);
   img.onerror = () => { /* plano oscuro con contorno */ };
-  img.src = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export'
+  // Con el módulo de terreno, la lámina base es el relieve sombreado del campo (mismos bounds)
+  const hs = field.layers?.find((l) => l.source === 'copernicus_dem' && l.parameter === 'hillshade' && l.status === 'ok' && l.png_url);
+  img.src = hs ? hs.png_url : 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export'
     + `?bbox=${west},${s},${e},${n}&bboxSR=4326&imageSR=4326&size=${size}&format=jpg&f=image`;
   return c;
 }

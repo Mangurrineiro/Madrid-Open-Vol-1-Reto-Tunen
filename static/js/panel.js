@@ -1,7 +1,8 @@
 // Panel derecho: modo "Farm" (capas, fuente, leyenda, destacados) y modo "Field" (tarjeta del campo).
-import { LAYERS, SOURCE_LABEL, SOURCE_NOTE } from './catalog.js';
+import { LAYERS, SOURCE_LABEL, SOURCE_NOTE, layerById } from './catalog.js';
 import { escapeHtml } from './map2d.js';
 import { gradientCss, palette, toCss } from './palettes.js';
+import { reliefNote, reliefSwitch, terrainCard } from './terrain.js';
 
 let root;
 let handlers = {};
@@ -18,14 +19,24 @@ export function initPanel(el, h) {
 
 const BASE_SOURCES = [['soilgrids', 'SoilGrids'], ['lbeg', 'LBEG'], ['buek200', 'BÜK200']];
 
-function layerList(view, compact) {
-  return `<div class="layer-list ${compact ? 'compact' : ''}">${LAYERS.map((l, i) => `
+const layerItem = (view, compact) => (l, i) => `
     <button class="layer-item ${l.id === view.layerId ? 'active' : ''}" data-action="layer" data-value="${l.id}" title="${l.desc}">
       <span class="layer-icon">${l.icon}</span>
       <span class="layer-text"><span class="layer-name">${l.name}</span>${compact ? '' : `<span class="layer-desc">${l.desc}</span>`}</span>
       <kbd>${i + 1}</kbd>
-    </button>`).join('')}</div>`;
+    </button>`;
+
+function layerList(view, compact) {
+  const base = `<div class="layer-list ${compact ? 'compact' : ''}">${LAYERS.map(layerItem(view, compact)).join('')}</div>`;
+  const t = view.terrain?.layers || [];
+  if (!t.length) return base;
+  const item = layerItem(view, compact);
+  return `${base}<div class="terrain-group"><h2 class="panel-title">Terrain</h2>
+    <div class="layer-list ${compact ? 'compact' : ''}">${t.map((l, i) => item(l, LAYERS.length + i)).join('')}</div></div>`;
 }
+
+const reliefTop = (view) => (view.terrain ? reliefSwitch(view.terrain.relief) : '');
+const reliefFoot = (view) => (view.terrain ? reliefNote() : '');
 
 function selectors(view, layer) {
   const subs = layer.subs ? `<div class="segmented subs">${layer.subs.map((s) => `
@@ -46,7 +57,7 @@ function samplingButton(view) {
 
 export function renderPanel(view) {
   if (view.mode === 'field') return renderFieldPanel(view);
-  const layer = LAYERS.find((l) => l.id === view.layerId);
+  const layer = layerById(view.layerId);
   const featured = (view.featured || []).map((f, i) => `
     <button class="featured-item" data-action="featured" data-value="${escapeHtml(f.field_id)}">
       <span class="featured-rank">${i + 1}</span>
@@ -55,7 +66,7 @@ export function renderPanel(view) {
       <span class="featured-state" title="${escapeHtml(f.state || '')}">${f.state === 'Lower Saxony' ? 'NI' : f.state === 'Saxony-Anhalt' ? 'ST' : '—'}</span>
     </button>`).join('');
 
-  root.innerHTML = `
+  root.innerHTML = `${reliefTop(view)}
     <section class="panel-section">
       <h2 class="panel-title">Layers</h2>
       ${layerList(view, false)}
@@ -64,19 +75,19 @@ export function renderPanel(view) {
       <div class="section-head"><h3>${layer.label(view.sub, view.source)}</h3></div>
       ${layer.panelNote ? `<p class="note">${layer.panelNote}</p>` : ''}
       ${selectors(view, layer)}
-      <div id="legend" class="legend"></div>
+      <div id="legend" class="legend"></div>${reliefFoot(view)}
     </section>
     <section class="panel-section">${samplingButton(view)}</section>
     <section class="panel-section">
       <h2 class="panel-title">Featured fields</h2>
       <div class="featured-list">${featured || '<p class="muted">No featured fields</p>'}</div>
     </section>
-    ${KEYS}`;
+    ${keys(view)}`;
 }
 
 function renderFieldPanel(view) {
   const f = view.field;
-  const layer = LAYERS.find((l) => l.id === view.layerId);
+  const layer = layerById(view.layerId);
   const chips = BASE_SOURCES.map(([s, n]) => {
     const has = (f.sources || []).includes(s);
     const why = has ? SOURCE_NOTE[s] : s === 'lbeg' ? 'LBEG data covers Lower Saxony only' : `No ${n} data for this field`;
@@ -94,7 +105,7 @@ function renderFieldPanel(view) {
       ${view.phase2?.stack ? `<button class="btn-ghost stack-btn" data-action="stack">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg>
         Back to layer stack</button>` : ''}
-    </section>
+    </section>${reliefTop(view)}
     <section class="panel-section">
       ${layerList(view, true)}
     </section>
@@ -109,13 +120,16 @@ function renderFieldPanel(view) {
         <span class="switch-label">Show uncertainty</span><kbd>U</kbd>
       </label>
       <div id="card" class="card">${u.on ? uncertaintyCard(view, layer) : cardHtml(view.card)}</div>
-      <div id="legend" class="legend"></div>
+      <div id="legend" class="legend"></div>${reliefFoot(view)}
     </section>
+    ${view.terrain ? terrainCard(f.terrain) : ''}
     <section class="panel-section">${samplingButton(view)}</section>
-    ${KEYS}`;
+    ${keys(view)}`;
 }
 
 const KEYS = `<footer class="keys"><span><kbd>1-6</kbd> layers</span><span><kbd>U</kbd> uncertainty</span><span><kbd>S</kbd> sampling</span><span><kbd>B</kbd> back</span></footer>`;
+const keys = (view) => (!view.terrain ? KEYS
+  : `<footer class="keys"><span><kbd>1-${LAYERS.length + view.terrain.layers.length}</kbd> layers</span><span><kbd>U</kbd> uncertainty</span><span><kbd>R</kbd> relief</span><span><kbd>S</kbd> sampling</span><span><kbd>B</kbd> back</span></footer>`);
 
 function uncertaintyCard(view, layer) {
   if (view.uncertainty.available === undefined) return cardHtml(null);
@@ -212,6 +226,6 @@ const fmt = (v) => (Math.abs(v) >= 10 || Number.isInteger(v) ? String(Math.round
 
 /** HTML de la tarjeta del campo según el modo (datos o incertidumbre). */
 export function cardFor(view) {
-  const layer = LAYERS.find((l) => l.id === view.layerId);
+  const layer = layerById(view.layerId);
   return view.uncertainty.on ? uncertaintyCard(view, layer) : cardHtml(view.card);
 }

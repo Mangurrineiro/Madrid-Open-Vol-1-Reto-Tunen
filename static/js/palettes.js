@@ -42,7 +42,24 @@ const NUMERIC = {
   quality: { min: 0, max: 100, unit: '', ticks: [0, 30, 50, 70, 100],
     stops: [[0, '#C62828'], [30, '#F57C00'], [50, '#FBC02D'], [70, '#7CB342'], [100, '#1B5E20']] },
   alert: { min: 0, max: 1, unit: '', ticks: [0, 0.5, 1], stops: ALERT_STOPS },
+  // Terreno (módulo adicional)
+  delta: { min: -10, max: 10, unit: '', ticks: [-10, -5, 0, 5, 10], tickLabel: (v) => (v > 0 ? `+${v}` : v < 0 ? `−${-v}` : '0'),
+    stops: [[-10, '#C62828'], [0, '#FFF59D'], [10, '#2E7D32']] },
 };
+
+// Terreno: escalas cuyo máximo depende de los datos (clave "elev|5.2", "slope|8.6")
+const ELEV_COLORS = ['#1B5E20', '#7CB342', '#F2D24B', '#C99A4E', '#8A5A2B'];
+const SLOPE_COLORS = ['#FFFFFF', '#FDD49E', '#EF6548', '#7F0000'];
+const niceTicks = (max) => { const t = [0, max / 4, max / 2, 3 * max / 4, max]; return t.map((v) => Math.round(v * 10) / 10); };
+const DYNAMIC = {
+  elev: (max) => ({ min: 0, max, unit: 'm', ticks: niceTicks(max), stops: even(0, max, ELEV_COLORS), caption: 'Metres above the field’s lowest point' }),
+  slope: (max) => ({ min: 0, max, unit: '°', ticks: niceTicks(max), stops: even(0, max, SLOPE_COLORS) }),
+};
+export const ASPECT_COLORS = { N: '#4575B4', NE: '#74ADD1', E: '#ABD9E9', SE: '#FEE090', S: '#FDAE61', SW: '#F46D43',
+  W: '#D73027', NW: '#8073AC', Flat: '#BDBDBD' };
+export const ASPECT_NAMES = { N: 'North', NE: 'North-east', E: 'East', SE: 'South-east', S: 'South', SW: 'South-west',
+  W: 'West', NW: 'North-west', Flat: 'Flat (slope < 0.5°)' };
+const ASPECT_ORDER = Object.keys(ASPECT_COLORS);
 
 // Fiabilidad: el valor del grid es sampling_priority (0-1) = (100 − índice)/100 → escala de alerta.
 const RELIABILITY = { min: 0, max: 1, unit: '', stops: ALERT_STOPS, ticks: [0, 0.25, 0.5, 0.75, 1],
@@ -141,6 +158,13 @@ export function palette(key) {
     const rank = (c) => { const g = ka5Group(c); const gi = 'SULT'.indexOf(g); const o = g ? KA5_GROUPS[g].order.indexOf(c) : 99; return (gi < 0 ? 9 : gi) * 100 + (o < 0 ? 50 : o); };
     p = { kind: 'cat', key, color: (v) => v == null ? null : ka5Color(v), title: 'KA5 texture classes',
       name: (v) => KA5_NAMES[v] || `${KA5_GROUP_NAME[ka5Group(v)] || 'Other'} (${v})`, sort: (a, b) => rank(a) - rank(b) };
+  } else if (key === 'aspect') {
+    p = { kind: 'cat', key, color: (v) => (v == null ? null : parseColor(ASPECT_COLORS[v] || '#BDBDBD')), title: 'Aspect (facing direction)',
+      name: (v) => ASPECT_NAMES[v] || v, sort: (a, b) => ASPECT_ORDER.indexOf(a) - ASPECT_ORDER.indexOf(b) };
+  } else if (key.includes('|') && DYNAMIC[key.split('|')[0]]) {
+    const [base, mx] = key.split('|');
+    const d = DYNAMIC[base](Number(mx));
+    p = { kind: 'num', key, ...d, color: makeScale(d.stops) };
   } else if (key === 'reliability') {
     p = { kind: 'num', key, ...RELIABILITY, color: makeScale(RELIABILITY.stops) };
   } else {

@@ -1,7 +1,7 @@
 // Estado y navegación: pantalla inicial → granja → campo (datos / incertidumbre, muestreo, inspector).
 /* global L */
 import { api } from './api.js';
-import { LAYERS, availableSources, findLayer, layerById } from './catalog.js';
+import { LAYERS, availableSources, findLayer, installAckerDelta, layerById, terrainLayers } from './catalog.js';
 import { closeInspector, nearestPoint, openInspector } from './inspector.js';
 import {
   clearUncertainty, createMap, escapeHtml, fitBounds, getMap, setFields, setOverlay, setSelected,
@@ -13,6 +13,7 @@ import { cellValue, clearRenderCache, emptyGrid, pointInRings, renderLayer, ring
 import { hideTip, initTooltip, showTip, soilOrigin } from './tooltip.js';
 import { farmScale, resetScales, summarize, uncertaintyGrid, uncertaintyText } from './uncertainty.js';
 import { initDropzone, setZoneMessage, startLoading, validateGeojson } from './upload.js';
+import { ackerLine, hasTerrain, resetRelief, setRelief, terrainTip } from './terrain.js';
 
 const $ = (s) => document.querySelector(s);
 const DROP_HINT = 'Field boundaries as Polygon or MultiPolygon · .geojson or .json';
@@ -38,6 +39,8 @@ const state = {
   points: null,            // puntos del campo seleccionado (inspector)
   renderToken: 0,
   idle: true,              // false mientras se cargan grids (lo usan los tests)
+  terrain: [],             // capas de terreno disponibles (vacío sin el módulo de terreno)
+  relief: false,           // "Relief shading"
 };
 window.__app = { state };
 
@@ -98,6 +101,7 @@ function init() {
     sampling: () => toggleSampling(),
     stack: () => openStack(state.layerId),
     breakdown: () => toggleBreakdown(),
+    relief: () => toggleRelief(),
   });
   loadPhase2();
   getMap().on('mousemove', onMouseMove);
@@ -118,6 +122,8 @@ function onKey(e) {
   }
   if (breakdownOpen() && (k === 'b' || k === 'escape')) { phase2.texture.close(); return; }
   if (n >= 1 && n <= LAYERS.length) setLayer(LAYERS[n - 1].id);
+  else if (n > LAYERS.length && n <= LAYERS.length + state.terrain.length) setLayer(state.terrain[n - LAYERS.length - 1].id);
+  else if (k === 'r' && state.terrain.length) toggleRelief();
   else if (k === 'u') toggleUncertainty();
   else if (k === 's') toggleSampling();
   else if ((k === 'b' || k === 'escape') && state.view === 'field') backToFarm();
@@ -172,8 +178,9 @@ function backToLanding() {
   setSelected(null);
   state.sampling = false;
   showSampling([]);
-  Object.assign(state, { view: 'landing', selected: null, uncertainty: false });
-  document.body.classList.remove('farm', 'field-mode', 'unc-mode');
+  Object.assign(state, { view: 'landing', selected: null, uncertainty: false, relief: false });
+  resetRelief();
+  document.body.classList.remove('farm', 'field-mode', 'unc-mode', 'relief-on');
   const l = $('#landing');
   l.style.removeProperty('display');
   requestAnimationFrame(() => l.classList.remove('hidden'));
@@ -190,6 +197,11 @@ async function enterFarm(data, name) {
     featured: data.featured?.length ? data.featured : featuredFallback(data.fields),
     selected: null, uncertainty: false, sampling: false, unc: null, card: null, extras: null, points: null,
   });
+  installAckerDelta(state.fields);
+  state.terrain = terrainLayers(state.fields);
+  if (layerById(state.layerId)?.terrain && !state.terrain.includes(layerById(state.layerId))) state.layerId = 'texture';
+  resetRelief();
+  applyRelief();
   state.renders.clear();
   state.grids.clear();
   showSampling([]);
@@ -233,6 +245,7 @@ function backToFarm() {
   Object.assign(state, { view: 'farm', selected: null, uncertainty: false, unc: null, card: null, extras: null, points: null });
   setSelected(null);
   document.body.classList.remove('field-mode', 'unc-mode');
+  applyRelief();
   fitBounds(unionBounds(state.fields), { duration: 0.9 });
   updateSampling();
   refresh();
@@ -257,6 +270,7 @@ async function enterField(id) {
     duration: 0.8 });
   updateSampling();
   loadFieldExtras(f);
+  applyRelief();
   if (breakdownOpen()) phase2.texture.close(true);
   const done = refresh();
   if (phase2.stack) phase2.stack.open(f, stackCtx());
@@ -265,13 +279,14 @@ async function enterField(id) {
 
 /** Grids auxiliares para el tooltip (fracciones derived, Ackerzahl) y puntos para el inspector. */
 async function loadFieldExtras(f) {
-  const want = [['derived', 'clay'], ['derived', 'sand'], ['derived', 'silt'], ['lbeg', 'ackerzahl']];
+  const want = [['derived', 'clay'], ['derived', 'sand'], ['derived', 'silt'], ['lbeg', 'ackerzahl'],
+    ['copernicus_dem', 'elevation'], ['lbeg', 'bodenzahl']];          // los dos últimos: solo con terreno
   const grids = await Promise.all(want.map(async ([s, p]) => {
     const m = findLayer(f, s, p);
     try { return m ? await api.grid(m.grid_url) : null; } catch { return null; }
   }));
   if (state.selected !== f.field_id) return;
-  state.extras = { clay: grids[0], sand: grids[1], silt: grids[2], ackerzahl: grids[3] };
+  state.extras = { clay: grids[0], sand: grids[1], silt: grids[2], ackerzahl: grids[3], elevation: grids[4], bodenzahl: grids[5] };
   try {
     const pts = await api.points(f.field_id);
     if (state.selected === f.field_id) state.points = pts.points;
@@ -318,7 +333,21 @@ function panelView() {
     field, sampling: state.sampling, card: state.card,
     uncertainty: { on: state.uncertainty, available: state.unc?.available, summary: state.unc?.summary },
     phase2: { stack: !!phase2.stack, texture: !!phase2.texture, breakdown: breakdownOpen() },
+    terrain: hasTerrain(state.data) ? { layers: state.terrain, relief: state.relief } : null,
   };
+}
+
+// ---------- relieve sombreado (módulo de terreno) ----------
+function applyRelief() {
+  setRelief({ on: state.relief, view: state.view, data: state.data, field: state.byId.get(state.selected) });
+}
+
+function toggleRelief() {
+  if (state.view === 'landing' || !hasTerrain(state.data)) return;
+  state.relief = !state.relief;
+  document.querySelectorAll('#relief-toggle').forEach((el) => el.classList.toggle('on', state.relief));
+  document.body.classList.toggle('relief-on', state.relief);
+  applyRelief();
 }
 
 async function refresh() {
@@ -397,6 +426,12 @@ async function updateField(layer, view) {
   if (!state.uncertainty) setCard(cardHtml(state.card));
 
   // Incertidumbre precargada (opacidad 0) para que el interruptor sea instantáneo
+  if (layer.terrain) {                 // terreno: una sola fuente, sin mapa de incertidumbre
+    state.unc = { render: null, available: false, scale: null, summary: null };
+    if (state.uncertainty) applyUncertaintyPanel();
+    state.idle = true;
+    return;
+  }
   const scale = await farmScale(layer, state.fields);
   const { grid, available } = await uncertaintyGrid(layer, f, scale, state.grids.get(f.field_id));
   if (token !== state.renderToken || state.selected !== f.field_id) return;
@@ -440,7 +475,7 @@ function fieldCard(layer, view, f) {
   let [mean, min, max] = [st.mean, st.min, st.max];
   if (layer.display) [mean, min, max] = [disp(st.mean), disp(st.max), disp(st.min)];
   const hist = histogram(vals.map(disp), colorOf);
-  if (layer.id === 'bodenzahl') {
+  if (layer.id === 'bodenzahl' && view.sub !== 'acker_delta') {
     const ack = findLayer(f, 'lbeg', 'ackerzahl');
     return { kind: 'quality', mean, min: Math.round(min), max: Math.round(max), coverage, hist,
       color: toCss(palette('quality').color(mean)), ackerzahl: ack?.stats?.mean };
@@ -467,7 +502,7 @@ function toggleUncertainty() {
   state.uncertainty = !state.uncertainty;
   $('#unc-toggle')?.classList.toggle('on', state.uncertainty);
   document.body.classList.toggle('unc-mode', state.uncertainty);
-  showUncertainty(state.selected, state.uncertainty);
+  if (!currentLayer().terrain) showUncertainty(state.selected, state.uncertainty);
   hideTip();
   if (state.uncertainty) applyUncertaintyPanel();
   else {
@@ -481,7 +516,9 @@ function applyUncertaintyPanel() {
   const layer = currentLayer();
   setCard(state.unc ? cardFor(view) : cardHtml(null));
   const sc = state.unc?.scale;
-  if (layer.id === 'reliability') {
+  if (layer.terrain) {
+    if (state.lastLegend) renderLegend(state.lastLegend);
+  } else if (layer.id === 'reliability') {
     renderLegend({ kind: 'num', palette: palette('reliability'), caption: 'Reliability index (high → low)' });
   } else if (state.unc?.available && sc) {
     const kind = state.unc.summary?.kind || 'spread';
@@ -503,7 +540,9 @@ function onMouseMove(e) {
   if (!f || overPopup || !pointInRings(lng, lat, ringsOf(f.geometry))) { hideTip(); return; }
   const layer = currentLayer();
   let html;
-  if (state.uncertainty) {
+  if (state.uncertainty && layer.terrain) {
+    html = `<div class="tip-main">${escapeHtml(layer.uncertaintyNote)}</div>`;
+  } else if (state.uncertainty) {
     const ok = state.unc?.available;
     const v = ok ? state.unc.render.getValue(lat, lng) : null;
     html = `<div class="tip-title">${escapeHtml(layer.name)} · uncertainty</div>
@@ -527,6 +566,12 @@ function valueTip(layer, sub, v, lat, lng) {
     return `<div class="tip-title">${isBs ? 'Soil assessment class' : 'KA5 texture class'}</div>
       <div class="tip-main"><span class="swatch" style="background:${toCss(palette(isBs ? 'bs' : 'ka5').color(v))}"></span><b>${escapeHtml(v)}</b> ${escapeHtml(name)}</div>
       ${parts.length ? `<div class="tip-sub">${parts.map(([p, x]) => `${p[0].toUpperCase() + p.slice(1)} ${Math.round(x)} %`).join(' · ')}</div>` : ''}`;
+  }
+  if (layer.terrain) return terrainTip(layer.id, v, cellValue(ex.elevation, lat, lng));
+  if (layer.id === 'bodenzahl' && sub === 'acker_delta') {
+    const line = ackerLine(cellValue(ex.bodenzahl, lat, lng), cellValue(ex.ackerzahl, lat, lng));
+    return `<div class="tip-title">Ackerzahl − Bodenzahl</div><div class="tip-main"><b>${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(Math.round(v))}</b></div>
+      ${line ? `<div class="tip-sub">${line}</div>` : ''}`;
   }
   if (layer.id === 'bodenzahl') {
     const ack = cellValue(ex.ackerzahl, lat, lng);

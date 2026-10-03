@@ -2,6 +2,7 @@
 /* global L */
 import { escapeHtml, getMap } from './map2d.js';
 import { KA5_NAMES, bsName, palette, toCss } from './palettes.js';
+import { terrainInspector } from './terrain.js';
 import { soilOrigin } from './tooltip.js';
 
 let popup = null;
@@ -71,7 +72,7 @@ export function openInspector(point, field) {
   const html = `
     <div class="insp-head"><b>${escapeHtml(field.name)}</b><span>Point ${point.point_id} · ${point.lat.toFixed(5)}, ${point.lon.toFixed(5)}</span></div>
     <table class="insp-table"><thead><tr><th></th>${COLS.map(([, n]) => `<th>${n}</th>`).join('')}</tr></thead><tbody>${table}</tbody></table>
-    ${classes}${conflict}${reliability}`;
+    ${classes}${conflict}${terrainInspector(point)}${reliability}`;
 
   marker = L.circleMarker([point.lat, point.lon], { radius: 6, color: '#fff', weight: 2, fillColor: '#7CB342', fillOpacity: 1, pane: 'samplesPane' }).addTo(map);
   popup = L.popup({ className: 'inspector-popup', maxWidth: 440, minWidth: 380, autoPanPaddingTopLeft: [20, 120],

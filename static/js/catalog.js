@@ -1,10 +1,12 @@
 // Catálogo: 6 capas agronómicas de la UI sobre los parámetros crudos del backend.
 
-export const SOURCE_LABEL = { auto: 'Combined', derived: 'Combined', soilgrids: 'SoilGrids', lbeg: 'LBEG', buek200: 'BÜK200' };
+export const SOURCE_LABEL = { auto: 'Combined', derived: 'Combined', soilgrids: 'SoilGrids', lbeg: 'LBEG', buek200: 'BÜK200',
+  copernicus_dem: 'Copernicus DEM' };
 export const SOURCE_NOTE = {
   soilgrids: 'ISRIC SoilGrids 250 m — global model',
   lbeg: 'LBEG data covers Lower Saxony only',
   buek200: 'BGR BÜK200 — national 1:200,000 soil map',
+  copernicus_dem: 'Copernicus DEM GLO-30 — 30 m surface model (includes trees and buildings)',
 };
 
 const svg = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
@@ -15,6 +17,9 @@ const ICON = {
   nfk: svg('<path d="M8 4c2.4 3 4 5.2 4 7.2a4 4 0 0 1-8 0C4 9.2 5.6 7 8 4z"/><path d="M17 10c1.8 2.2 3 3.9 3 5.4a3 3 0 0 1-6 0c0-1.5 1.2-3.2 3-5.4z"/>'),
   bodenzahl: svg('<path d="M12 3l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.8z"/>'),
   reliability: svg('<path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6z"/><path d="M8.8 12.2l2.2 2.2 4.3-4.6"/>'),
+  elevation: svg('<path d="M3 19l6-9 4 5 3-3 5 7z"/><path d="M8.2 11.2l1.8 1.3 1.6-1"/>'),
+  slope: svg('<path d="M4 19h16L4 7z"/><path d="M8 19a4 4 0 0 0-1.3-3"/>'),
+  aspect: svg('<circle cx="12" cy="12" r="8.5"/><path d="M12 6.5l2.2 5.5L12 17.5 9.8 12z"/>'),
 };
 
 const has = (field, source, parameter) =>
@@ -92,7 +97,55 @@ export const LAYERS = [
   },
 ];
 
-export const layerById = (id) => LAYERS.find((l) => l.id === id);
+// ---------- Terreno (módulo adicional): solo aparece si el backend envía sus capas ----------
+const TERRAIN_NOTE = 'Terrain data has a single source: stated vertical accuracy ±2 m (relative)';
+const scaleMax = (field, parameter, fallback) => findLayer(field, 'copernicus_dem', parameter)?.colormap?.max ?? fallback;
+
+export const TERRAIN_LAYERS = [
+  {
+    id: 'elevation', name: 'Relative elevation', icon: ICON.elevation, desc: 'Metres above the lowest point of the field',
+    sources: () => ['copernicus_dem'], defaultSource: () => 'copernicus_dem',
+    resolve: (field) => ({ source: 'copernicus_dem', parameter: 'elevation_rel',
+      palette: `elev|${Math.max(1, scaleMax(field, 'elevation_rel', 10))}` }),
+    label: () => 'Relative elevation', unit: () => 'm',
+    uncertainty: null, uncertaintyNote: TERRAIN_NOTE, terrain: true,
+  },
+  {
+    id: 'slope', name: 'Slope', icon: ICON.slope, desc: 'Steepness of the terrain in degrees',
+    sources: () => ['copernicus_dem'], defaultSource: () => 'copernicus_dem',
+    resolve: (field) => ({ source: 'copernicus_dem', parameter: 'slope',
+      palette: `slope|${Math.max(3, scaleMax(field, 'slope', 3))}` }),
+    label: () => 'Slope', unit: () => '°',
+    uncertainty: null, uncertaintyNote: TERRAIN_NOTE, terrain: true,
+  },
+  {
+    id: 'aspect', name: 'Aspect', icon: ICON.aspect, desc: 'Direction the terrain faces (downhill)',
+    sources: () => ['copernicus_dem'], defaultSource: () => 'copernicus_dem',
+    resolve: () => ({ source: 'copernicus_dem', parameter: 'aspect', palette: 'aspect' }),
+    label: () => 'Aspect', unit: () => '',
+    uncertainty: null, uncertaintyNote: TERRAIN_NOTE, terrain: true,
+  },
+];
+
+/** Capas de terreno con dato en al menos un campo (vacío sin el módulo de terreno). */
+export function terrainLayers(fields) {
+  return TERRAIN_LAYERS.filter((l) => fields.some((f) => { const r = l.resolve(f); return !!findLayer(f, r.source, r.parameter); }));
+}
+
+/** Variante "Ackerzahl − Bodenzahl" en la capa Bodenzahl, solo si existe acker_delta. */
+const BODENZAHL_SUBS = [{ id: 'bodenzahl', label: 'Bodenzahl' }, { id: 'acker_delta', label: 'Ackerzahl − Bodenzahl' }];
+export function installAckerDelta(fields) {
+  const l = LAYERS.find((x) => x.id === 'bodenzahl');
+  const on = fields.some((f) => findLayer(f, 'lbeg', 'acker_delta'));
+  if (!l.__orig) l.__orig = { resolve: l.resolve, label: l.label, subs: l.subs };
+  if (!on) { Object.assign(l, l.__orig); if (!l.__orig.subs) delete l.subs; return; }
+  l.subs = BODENZAHL_SUBS;
+  l.resolve = (field, sub, src) => (sub === 'acker_delta'
+    ? { source: 'lbeg', parameter: 'acker_delta', palette: 'delta' } : l.__orig.resolve(field, sub, src));
+  l.label = (sub, src) => (sub === 'acker_delta' ? 'Ackerzahl − Bodenzahl' : l.__orig.label(sub, src));
+}
+
+export const layerById = (id) => LAYERS.find((l) => l.id === id) || TERRAIN_LAYERS.find((l) => l.id === id);
 
 export function findLayer(field, source, parameter) {
   return field.layers.find((l) => l.source === source && l.parameter === parameter && l.status === 'ok' && l.grid_url) || null;
