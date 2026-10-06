@@ -1,0 +1,4 @@
+-r requirements.txt
+# Comprobaciones de la interfaz (tests/ui): además, `python -m playwright install chromium`
+playwright>=1.40
+httpx>=0.27
