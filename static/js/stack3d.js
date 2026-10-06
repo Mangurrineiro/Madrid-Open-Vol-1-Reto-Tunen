@@ -1,5 +1,5 @@
-// Fase 2 · Pila isométrica de las 6 capas del campo (CSS 3D, sin WebGL).
-// Se carga con import() dinámico: si falla, la Fase 1 sigue funcionando sin el botón.
+// Pila isométrica de las 6 capas del campo (CSS 3D, sin WebGL).
+// Se carga con import() dinámico: si falla, la vista de mapa sigue funcionando sin el botón.
 import { api } from './api.js';
 import { LAYERS, findLayer } from './catalog.js';
 import { escapeHtml } from './map2d.js';
@@ -16,11 +16,11 @@ let view = null;                // estado de la vista abierta
 ensureCss();
 
 function ensureCss() {
-  if (document.querySelector('link[data-phase2]')) return;
+  if (document.querySelector('link[data-views3d]')) return;
   const l = document.createElement('link');
   l.rel = 'stylesheet';
-  l.href = '/static/css/phase2.css';
-  l.dataset.phase2 = '1';
+  l.href = '/static/css/views3d.css';
+  l.dataset.views3d = '1';
   document.head.appendChild(l);
 }
 

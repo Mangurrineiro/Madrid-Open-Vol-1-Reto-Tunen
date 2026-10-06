@@ -229,7 +229,7 @@ def point_table(field, rows: list[dict]) -> list[dict]:
 
 # ---------- resumen de granja ----------
 def field_summary(field, rows: list[dict]) -> dict:
-    """Fuentes con dato, estado federal (por cobertura LBEG) y puntuación de 'interés'."""
+    """Fuentes con dato, estado federal (límites VG250) y puntuación de 'interés'."""
     have = defaultdict(int)
     for r in rows:
         if r["status"] == "ok" and r["source"] not in ("derived", "copernicus_dem"):

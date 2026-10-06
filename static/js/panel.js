@@ -106,7 +106,7 @@ function renderFieldPanel(view) {
       <h2 class="field-name">${escapeHtml(f.name)}</h2>
       <div class="field-meta"><span class="num">${f.area_ha.toFixed(1)} ha</span><span>·</span><span>${escapeHtml(f.state || '')}</span></div>
       <div class="src-chips">${chips}</div>
-      ${view.phase2?.stack ? `<button class="btn-ghost stack-btn" data-action="stack">
+      ${view.views3d?.stack ? `<button class="btn-ghost stack-btn" data-action="stack">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg>
         Back to layer stack</button>` : ''}
     </section>${reliefTop(view)}${view.terrain?.profile ? profileButton(view) : ''}
@@ -116,9 +116,9 @@ function renderFieldPanel(view) {
     <section class="panel-section active-layer">
       <div class="section-head"><h3>${layer.label(view.sub, view.source)}</h3></div>
       ${selectors(view, layer)}
-      ${view.phase2?.texture && layer.id === 'texture' ? `<button class="btn-ghost breakdown-btn ${view.phase2.breakdown ? 'on' : ''}" data-action="breakdown">
+      ${view.views3d?.texture && layer.id === 'texture' ? `<button class="btn-ghost breakdown-btn ${view.views3d.breakdown ? 'on' : ''}" data-action="breakdown">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="5" height="14" rx="1"/><rect x="10" y="5" width="5" height="14" rx="1"/><rect x="17" y="5" width="4" height="14" rx="1"/></svg>
-        ${view.phase2.breakdown ? 'Back to texture classes' : 'Show numeric breakdown'}</button>` : ''}
+        ${view.views3d.breakdown ? 'Back to texture classes' : 'Show numeric breakdown'}</button>` : ''}
       <label class="switch ${u.on ? 'on' : ''}" data-action="uncertainty" id="unc-toggle">
         <span class="switch-track"><span class="switch-knob"></span></span>
         <span class="switch-label">Show uncertainty</span><kbd>U</kbd>

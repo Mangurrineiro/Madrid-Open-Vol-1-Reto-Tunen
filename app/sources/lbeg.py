@@ -3,10 +3,10 @@ LBEG NIBIS (Niedersachsen): BK50 + Bodenschätzung en UNA llamada GetFeatureInfo
 
 - QUERY_LAYERS = L816 (BK50 Karte), L839 (nFKWe), L823 (WE), L837 (Ertragsfähigkeit),
   L849 (Bodenschätzung). Cada feature se identifica por sus atributos, nunca por posición
-  (si una capa no tiene objeto, desaparece y el orden ya no sirve; RESUMEN2 §3).
+  (si una capa no tiene objeto, desaparece y el orden ya no sirve; exploracion/evidencia/samples2/RESUMEN2.md §3).
 - Las geometrías llegan en EPSG:4647 (declarado en geometry.crs) -> se pasan a 25832.
   Por capa solo vale la feature cuyo polígono CONTIENE el punto (tolerancia del WMS,
-  RESUMEN2 §4: a veces devuelve el vecino).
+  RESUMEN2.md §4: a veces devuelve el vecino).
 - Cosecha: tras cada llamada, cada polígono devuelto se asigna a todos los puntos de la
   rejilla que contiene. Solo se consultan puntos sin resolver. Las 4 capas BK50 comparten
   polígono (mismo FL_NR) -> grupo "bk50"; L849 -> grupo "bs".

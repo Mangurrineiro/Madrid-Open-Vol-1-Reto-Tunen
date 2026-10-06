@@ -4,7 +4,7 @@ BGR BÜK200 (1:200.000, toda Alemania) + perfiles FISBo.
 - ArcGIS REST: capa 0 (índice de hojas) con el polígono del campo -> BLATTNUM ("CC 3926")
   -> capa de la hoja cuyo name empieza por "CC3926" (lista de capas del MapServer, cacheada).
 - La hoja se consulta con el polígono del campo por POST (esriGeometryPolygon, inSR=4326).
-  BÜK200 NUNCA devuelve geometría (RESUMEN2 §5): con 1 unidad, valor uniforme en el campo;
+  BÜK200 NUNCA devuelve geometría (exploracion/evidencia/samples2/RESUMEN2.md §5): con 1 unidad, valor uniforme en el campo;
   con varias, se consulta por punto en una rejilla de 100 m y cada punto de 25 m toma la
   unidad del punto consultado más cercano.
 - Perfil FISBo de cada unidad (URL del campo Profile, "&amp;" -> "&"), cacheado por URL
@@ -98,7 +98,7 @@ def query_point(layer_id: int, lon: float, lat: float) -> list[dict]:
 # ---------------- FISBo ----------------
 
 def parse_profiles(text: str) -> list[dict]:
-    """Mismo parser que evidencia/comprobaciones2.py: página FISBo -> perfiles -> horizontes."""
+    """Página FISBo -> perfiles -> horizontes (mismo parser que exploracion/evidencia/comprobaciones2.py)."""
     def clean(s):
         return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", s)).replace("\xad", "")).strip()
 

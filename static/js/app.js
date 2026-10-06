@@ -45,34 +45,34 @@ const state = {
 };
 window.__app = { state };
 
-// ---------- Fase 2 (opcional): si un módulo falla, la Fase 1 sigue y sus botones no aparecen ----------
-const phase2 = {};
-async function loadPhase2() {
-  try { phase2.stack = await import('./stack3d.js'); } catch (err) { console.warn('stack3d.js no disponible', err); }
-  try { phase2.texture = await import('./texture3.js'); } catch (err) { console.warn('texture3.js no disponible', err); }
+// ---------- Vistas 3D (opcionales): si un módulo falla, el mapa sigue y sus botones no aparecen ----------
+const views3d = {};
+async function loadViews3d() {
+  try { views3d.stack = await import('./stack3d.js'); } catch (err) { console.warn('stack3d.js no disponible', err); }
+  try { views3d.texture = await import('./texture3.js'); } catch (err) { console.warn('texture3.js no disponible', err); }
 }
-const stackOpen = () => !!phase2.stack?.isOpen();
-const breakdownOpen = () => !!phase2.texture?.isOpen();
+const stackOpen = () => !!views3d.stack?.isOpen();
+const breakdownOpen = () => !!views3d.texture?.isOpen();
 const stackCtx = () => ({
   panel: $('#panel'),
   onEnterLayer: (id) => { state.layerId = id; refresh(); },
-  onMapView: () => { phase2.stack.close(); refresh(); },
+  onMapView: () => { views3d.stack.close(); refresh(); },
 });
 const textureCtx = () => ({ panel: $('#panel'), fields: state.fields, onClose: () => refresh() });
 function openStack(fromLayer) {
-  if (!phase2.stack || state.view !== 'field') return;
-  if (breakdownOpen()) phase2.texture.close(true);
+  if (!views3d.stack || state.view !== 'field') return;
+  if (breakdownOpen()) views3d.texture.close(true);
   closeInspector();
   profile.close();
   hideTip();
-  phase2.stack.open(state.byId.get(state.selected), stackCtx(), { fromLayer });
+  views3d.stack.open(state.byId.get(state.selected), stackCtx(), { fromLayer });
 }
 function toggleBreakdown() {
-  if (!phase2.texture || state.view !== 'field') return;
-  if (breakdownOpen()) { phase2.texture.close(); return; }
+  if (!views3d.texture || state.view !== 'field') return;
+  if (breakdownOpen()) { views3d.texture.close(); return; }
   closeInspector();
   hideTip();
-  phase2.texture.open(state.byId.get(state.selected), textureCtx());
+  views3d.texture.open(state.byId.get(state.selected), textureCtx());
   renderPanel(panelView());
   if (state.card) { setCard(cardHtml(state.card)); if (state.lastLegend) renderLegend(state.lastLegend); }
 }
@@ -106,7 +106,7 @@ function init() {
     relief: () => toggleRelief(),
     profile: () => toggleProfile(),
   });
-  loadPhase2();
+  loadViews3d();
   getMap().on('mousemove', onMouseMove);
   getMap().on('mouseout', hideTip);
   getMap().on('click', (e) => {
@@ -121,12 +121,12 @@ function onKey(e) {
   const k = e.key.toLowerCase();
   const n = Number(e.key);
   if (stackOpen()) {
-    if (n >= 1 && n <= LAYERS.length) phase2.stack.enterLayer(LAYERS[n - 1].id);
+    if (n >= 1 && n <= LAYERS.length) views3d.stack.enterLayer(LAYERS[n - 1].id);
     else if (k === 'm') stackCtx().onMapView();
     else if (k === 'b' || k === 'escape') backToFarm();
     return;
   }
-  if (breakdownOpen() && (k === 'b' || k === 'escape')) { phase2.texture.close(); return; }
+  if (breakdownOpen() && (k === 'b' || k === 'escape')) { views3d.texture.close(); return; }
   if (k === 'escape' && profile.isOpen()) { profile.close(); return; }
   if (k === 'p' && state.view === 'field') { toggleProfile(); return; }
   if (n >= 1 && n <= LAYERS.length) setLayer(LAYERS[n - 1].id);
@@ -178,8 +178,8 @@ async function loadFile(file) {
 }
 
 function backToLanding() {
-  if (stackOpen()) phase2.stack.close(true);
-  if (breakdownOpen()) phase2.texture.close(true);
+  if (stackOpen()) views3d.stack.close(true);
+  if (breakdownOpen()) views3d.texture.close(true);
   closeInspector();
   hideTip();
   clearUncertainty();
@@ -247,8 +247,8 @@ function featuredFallback(fields) {
 
 function backToFarm() {
   if (state.view !== 'field') return;
-  if (stackOpen()) phase2.stack.close();
-  if (breakdownOpen()) phase2.texture.close(true);
+  if (stackOpen()) views3d.stack.close();
+  if (breakdownOpen()) views3d.texture.close(true);
   closeInspector();
   hideTip();
   clearUncertainty();
@@ -284,9 +284,9 @@ async function enterField(id) {
   updateSampling();
   loadFieldExtras(f);
   applyRelief();
-  if (breakdownOpen()) phase2.texture.close(true);
+  if (breakdownOpen()) views3d.texture.close(true);
   const done = refresh();
-  if (phase2.stack) phase2.stack.open(f, stackCtx());
+  if (views3d.stack) views3d.stack.open(f, stackCtx());
   await done;
 }
 
@@ -345,7 +345,7 @@ function panelView() {
     sources: availableSources(layer, sub, field ? [field] : state.fields), featured: state.featured,
     field, sampling: state.sampling, card: state.card,
     uncertainty: { on: state.uncertainty, available: state.unc?.available, summary: state.unc?.summary },
-    phase2: { stack: !!phase2.stack, texture: !!phase2.texture, breakdown: breakdownOpen() },
+    views3d: { stack: !!views3d.stack, texture: !!views3d.texture, breakdown: breakdownOpen() },
     terrain: hasTerrain(state.data) ? { layers: state.terrain, relief: state.relief,
       profile: state.view === 'field' && profile.canProfile(field), profileOpen: profile.isOpen() } : null,
   };
@@ -378,7 +378,7 @@ function toggleRelief() {
 
 async function refresh() {
   if (!state.fields.length || state.view === 'landing') return;
-  if (breakdownOpen() && state.layerId !== 'texture') phase2.texture.close(true);
+  if (breakdownOpen() && state.layerId !== 'texture') views3d.texture.close(true);
   const view = panelView();
   const layer = currentLayer();
   hideTip();
@@ -649,6 +649,6 @@ async function pool(items, n, fn) {
 window.__app.enterField = enterField;
 window.__app.setLayer = setLayer;
 window.__app.toggleUncertainty = toggleUncertainty;
-window.__app.phase2 = phase2;
+window.__app.views3d = views3d;
 window.__app.closeStack = () => { if (stackOpen()) stackCtx().onMapView(); };
 init();

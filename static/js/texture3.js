@@ -1,4 +1,4 @@
-// Fase 2 · Desglose de textura en tres paneles (Clay, Sand, Silt) con cursor sincronizado
+// Desglose de textura en tres paneles (Clay, Sand, Silt) con cursor sincronizado
 // y transición independiente a la incertidumbre de cada fracción.
 import { api } from './api.js';
 import { findLayer } from './catalog.js';
@@ -13,11 +13,11 @@ let view = null;
 ensureCss();
 
 function ensureCss() {
-  if (document.querySelector('link[data-phase2]')) return;
+  if (document.querySelector('link[data-views3d]')) return;
   const l = document.createElement('link');
   l.rel = 'stylesheet';
-  l.href = '/static/css/phase2.css';
-  l.dataset.phase2 = '1';
+  l.href = '/static/css/views3d.css';
+  l.dataset.views3d = '1';
   document.head.appendChild(l);
 }
 

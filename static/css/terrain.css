@@ -25,7 +25,7 @@ body.relief-on .relief-note { display: block; }
 .relief-switch.on { background: rgba(124, 179, 66, 0.13); border-color: rgba(124, 179, 66, 0.45); }
 .relief-switch.on .switch-track { background: #7CB342; }
 
-/* ---------- Perfil altimétrico (etapa 3) ---------- */
+/* ---------- Perfil altimétrico ---------- */
 .profile-btn { margin-top: 8px; }
 .profile-picking, .profile-picking .leaflet-interactive { cursor: crosshair !important; }
 #profile-panel { position: fixed; left: 64px; right: calc(var(--panel-w) + 32px); bottom: 16px; z-index: 1000; padding: 10px 14px 8px;

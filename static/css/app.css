@@ -171,7 +171,7 @@ kbd { font-family: inherit; font-size: 10.5px; color: var(--muted); border: 1px 
   :root { --panel-w: 320px; }
 }
 
-/* ---------- etapa 1.2: campo, tooltip, inspector ---------- */
+/* ---------- Vista de campo, tooltip, inspector ---------- */
 .icon-btn { margin-left: 6px; width: 32px; height: 32px; flex: none; display: grid; place-items: center; border-radius: 9px;
   border: 1px solid var(--border); background: rgba(255, 255, 255, 0.05); cursor: pointer; color: var(--muted);
   transition: color 250ms var(--ease), background 250ms var(--ease); }
@@ -263,7 +263,7 @@ kbd { font-family: inherit; font-size: 10.5px; color: var(--muted); border: 1px 
 .rel-bar i { display: block; height: 100%; border-radius: 4px; transition: width 450ms var(--ease); }
 .rel-bar.wide { margin: 6px 0 14px; }
 
-/* ---------- etapa 1.3: incertidumbre y muestreo ---------- */
+/* ---------- Incertidumbre y muestreo ---------- */
 .switch { display: flex; align-items: center; gap: 12px; margin-top: 4px; padding: 10px 12px; border-radius: 12px; cursor: pointer;
   border: 1px solid var(--border); background: rgba(255, 255, 255, 0.04); user-select: none;
   transition: background 300ms var(--ease), border-color 300ms var(--ease); }
@@ -300,7 +300,7 @@ kbd { font-family: inherit; font-size: 10.5px; color: var(--muted); border: 1px 
 @keyframes shimmer { to { background-position: -200% 0; } }
 .soil-overlay { transition: opacity 450ms ease-out, filter 450ms ease-out; }
 
-/* ---------- etapa 1.4: carga de archivo ---------- */
+/* ---------- Carga de archivo ---------- */
 .drop-msg.warning { color: #FFCC80; }
 #loading { position: fixed; inset: 0; z-index: 2500; display: grid; place-items: center; background: rgba(15, 20, 18, 0.7);
   backdrop-filter: blur(6px); opacity: 0; pointer-events: none; transition: opacity 400ms var(--ease); }
@@ -329,7 +329,7 @@ kbd { font-family: inherit; font-size: 10.5px; color: var(--muted); border: 1px 
 .sample-marker.compact .dot { inset: 1px; border-width: 2px; box-shadow: 0 0 0 3px rgba(201, 154, 78, 0.35), 0 1px 6px rgba(0, 0, 0, 0.6); }
 [hidden] { display: none !important; }
 
-/* ---------- etapa 2.3: pulido ---------- */
+/* ---------- Estado vacío, transiciones y atajos ---------- */
 .field-head, .active-layer .card, .featured-list { animation: fadein 350ms ease-out; }
 .empty-state { display: flex; gap: 14px; align-items: center; padding: 6px 0; }
 .empty-state div { display: flex; flex-direction: column; gap: 3px; }

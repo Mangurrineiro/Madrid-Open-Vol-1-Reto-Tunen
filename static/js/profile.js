@@ -1,4 +1,4 @@
-// Perfil altimétrico (módulo de terreno, etapa 3): dos clics dentro del campo → gráfico SVG bajo el mapa con
+// Perfil altimétrico (módulo de terreno): dos clics dentro del campo → gráfico SVG bajo el mapa con
 // la elevación cada 10 m sobre el grid "elevation" y, si existe, la Bodenzahl a lo largo de la misma línea.
 /* global L */
 import { api } from './api.js';

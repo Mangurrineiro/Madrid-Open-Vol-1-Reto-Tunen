@@ -5,7 +5,7 @@ ISRIC SoilGrids 2.0 (250 m, global).
   con margen, para clay, sand, silt, phh2o, soc, wv0033, wv1500 × 0-5/5-15/15-30 cm ×
   mean/Q0.05/Q0.95 (63 coberturas por campo, ~0,4 s cada una, cacheadas en disco).
 - Respaldo si el WCS falla: VRT de files.isric.org/soilgrids/latest/data/ (no existe para
-  wv0033/wv1500, ver samples2/RESUMEN2.md §6).
+  wv0033/wv1500, ver exploracion/evidencia/samples2/RESUMEN2.md §6).
 - El GeoTIFF del WCS no declara nodata: -32768 = sin cobertura (zonas urbanas). Además,
   un pH, un contenido de agua o una textura (clay+sand+silt) de 0 son físicamente
   imposibles y se tratan también como sin cobertura (máscara).

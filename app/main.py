@@ -39,7 +39,7 @@ app = FastAPI(title="Tunen Soil Aggregation API", version="0.1")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 RENDERS.mkdir(parents=True, exist_ok=True)
 app.mount("/renders", StaticFiles(directory=RENDERS), name="renders")
-app.mount("/static", StaticFiles(directory=STATIC), name="static")      # UI: css/, js/, dev_samples/
+app.mount("/static", StaticFiles(directory=STATIC), name="static")      # UI: css/ y js/
 
 
 @app.get("/", include_in_schema=False)

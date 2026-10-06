@@ -49,7 +49,7 @@ PARAMETERS: dict[str, dict] = {
     "nfk_disagreement":  {"unit": "mm/dm", "min": 0, "max": None, "cmap": "magma", "desc": "Desacuerdo de nFK entre fuentes (máx − mín)"},
     "clay_conflict": {"unit": "0/1", "min": 0, "max": 1, "cmap": "RdYlGn_r",
                       "desc": "Conflicto: arcilla SoilGrids > partículas finas máx. de la Bodenschätzung (imposible)"},
-    # Añadidos por app/analysis.py (UI): clase KA5 de BÜK200, σ del modelo y prioridad de muestreo.
+    # Capas de app/analysis.py: clase KA5 de BÜK200, σ del modelo y prioridad de muestreo.
     "ka5_class": {"unit": "texto", "min": None, "max": None, "cmap": "tab20", "desc": "Bodenart KA5 dominante (BÜK200, horizonte superior)"},
     "clay_sigma": {"unit": "%", "min": 0, "max": None, "cmap": "magma", "desc": "σ del modelo de la arcilla combinada"},
     "sand_sigma": {"unit": "%", "min": 0, "max": None, "cmap": "magma", "desc": "σ del modelo de la arena combinada"},
@@ -64,8 +64,8 @@ ANALYSIS_PARAMETERS = ["ka5_class", "clay_sigma", "sand_sigma", "silt_sigma", "s
                        "sampling_priority"]
 
 # ---------- Módulo adicional de terreno (Copernicus DEM GLO-30) ----------
-# Con ENABLE_TERRAIN=False (o la variable de entorno ENABLE_TERRAIN=0) todo funciona exactamente
-# como antes: no se registra la fuente ni se añaden parámetros ni capas.
+# Con ENABLE_TERRAIN=False (o la variable de entorno ENABLE_TERRAIN=0) no se registra la fuente
+# ni se añaden parámetros ni capas de terreno.
 ENABLE_TERRAIN = os.environ.get("ENABLE_TERRAIN", "1").strip().lower() not in ("0", "false", "no", "off")
 TERRAIN_PARAMETERS = ["elevation", "elevation_rel", "slope", "aspect", "hillshade"]
 
