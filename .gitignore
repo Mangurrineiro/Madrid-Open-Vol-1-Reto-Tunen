@@ -22,10 +22,19 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# Salidas generadas por el backend (la caché data/cache SÍ se versiona: demo sin red)
+# Salidas generadas por el backend
 data/out/
 data/renders/
-data/cache/_stale/
+data/cache/
+
+# Datos reales compartidos para el hackathon (granja LuF Seggerde): no se publican.
+# Ni el GeoJSON ni nada derivado de él (respuestas de las fuentes, polígonos, puntos).
+/reto/
+data/fields.geojson
+exploracion/evidencia/samples/
+exploracion/evidencia/samples2/
+exploracion/lbeg-bk50/bk50_responses/
+exploracion/lbeg-bk50/Bodenzahl*.json
 
 # Capturas de los tests de UI (para la presentación; no se versionan)
 /out/

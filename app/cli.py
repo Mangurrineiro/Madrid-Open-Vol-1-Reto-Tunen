@@ -1,15 +1,15 @@
 """
 CLI.
 
-  python -m app.cli test "Umfeld Groß" Mittelbreite [--source soilgrids]
+  python -m app.cli test "Lerchenbreite" "Großer Schlag" [--source soilgrids]
       Ejecuta las fuentes sobre esos campos (por nombre o plotId), imprime un resumen
       por parámetro y guarda la tabla larga en data/out/<campo>.csv
 
-  python -m app.cli warm data/fields.geojson [--source X] [--passes 3] [--wait 180]
+  python -m app.cli warm data/demo/example_farm.geojson [--source X] [--passes 3] [--wait 180]
       Precarga la caché de todos los campos activos. Los campos con filas en error
       (p. ej. timeouts de LBEG, que no se cachean) se reintentan en pasadas sucesivas.
 
-  python -m app.cli refresh [--source X] [--geojson data/fields.geojson]
+  python -m app.cli refresh [--source X] [--geojson data/demo/example_farm.geojson]
       Vacía la caché de una fuente (o de todas; queda en data/cache/_stale/ como respaldo)
       y vuelve a precargar.
 """

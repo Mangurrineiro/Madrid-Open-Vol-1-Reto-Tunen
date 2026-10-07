@@ -5,7 +5,8 @@ Caché HTTP en disco. Todo lo que viene de una API externa pasa por aquí.
   más <clave>.json con la URL, la fecha de descarga y el Content-Type.
 - Solo se guarda lo que la función `validate` da por bueno: un 503.2 dentro de HTTP 200
   NUNCA entra en caché.
-- Si está en caché no se toca la red: la demo funciona sin conexión una vez precargada.
+- Si está en caché no se toca la red. Se busca primero en data/cache/ (local) y luego en
+  data/demo/cache/ (versionada, solo lectura): así la granja de ejemplo funciona sin conexión.
 - /refresh no borra: mueve la caché a data/cache/_stale/<source>. Si al recalcular una
   llamada falla y existe la versión anterior, se usa esa (y se vuelve a guardar), así un
   refresco con la red caída nunca deja la demo sin datos.
@@ -24,7 +25,7 @@ from typing import Callable
 
 import httpx
 
-from .config import CACHE, USER_AGENT
+from .config import CACHE, DEMO_CACHE, USER_AGENT
 
 _client: httpx.Client | None = None
 _client_lock = threading.Lock()
@@ -78,13 +79,13 @@ STALE = CACHE / "_stale"
 
 
 def lookup(source: str, method: str, url: str, body: bytes | None = None, *, stale: bool = False) -> Cached | None:
-    d = (STALE / source) if stale else cache_dir(source)
     k = _key(method, url, body)
-    bin_path, meta_path = d / f"{k}.bin", d / f"{k}.json"
-    if bin_path.exists() and meta_path.exists():
-        meta = json.loads(meta_path.read_text(encoding="utf-8"))
-        return Cached(bin_path.read_bytes(), meta["url"], meta["fetched_at"],
-                      meta.get("content_type", ""), True)
+    for d in [STALE / source] if stale else [cache_dir(source), DEMO_CACHE / source]:
+        bin_path, meta_path = d / f"{k}.bin", d / f"{k}.json"
+        if bin_path.exists() and meta_path.exists():
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            return Cached(bin_path.read_bytes(), meta["url"], meta["fetched_at"],
+                          meta.get("content_type", ""), True)
     return None
 
 

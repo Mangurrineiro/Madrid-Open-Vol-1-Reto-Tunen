@@ -2,7 +2,7 @@
 
 Scripts de Playwright que arrancan la API (uvicorn en el puerto 8765), abren Chromium, recorren la interfaz,
 guardan capturas en `out/screens/` y terminan con código 1 si hay errores de consola o falla alguna acción.
-Usan la caché versionada, así que no necesitan red.
+Usan la granja de ejemplo y su caché versionada (`data/demo/`), así que no necesitan red.
 
 ```powershell
 .venv\Scripts\python -m pip install -r requirements-dev.txt

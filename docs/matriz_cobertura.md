@@ -3,6 +3,27 @@
 Qué aporta cada fuente a cada parámetro, de qué atributo sale y cómo se traduce a la unidad común. La API la
 expone resumida en `GET /sources`. Todos los parámetros de suelo se refieren al topsoil (0–30 cm).
 
+## De un vistazo
+
+| | 🌍 SoilGrids | 🏛️ LBEG BK50 | 📜 Bodenschätzung | 🇩🇪 BÜK200 | 🧮 derived |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **Arcilla / arena / limo** | 🟢 % | ⚪ | 🟡 clase | 🟡 clase → % | 🟢 |
+| **pH** | 🟢 agua | ⚪ | ⚪ | 🟡 CaCl₂ | ⚪ |
+| **Carbono orgánico** | 🟢 | ⚪ | ⚪ | 🟡 humus → C | 🟢 |
+| **nFK** | 🟢 | 🟢 | ⚪ | ⚪ | 🟢 |
+| **Bodenzahl** | ⚪ | 🟠 proxy | 🟢 | ⚪ | 🟢 |
+| **Cobertura** | Global | Solo NDS | Solo NDS | Alemania | Unión |
+
+🟢 valor numérico directo · 🟡 clase traducida a número con rango · 🟠 sustituto (proxy) · ⚪ no aporta
+
+La granja está partida por la frontera, así que en la mitad de los campos LBEG no tiene datos:
+
+```mermaid
+pie showData title Campos activos por Land
+    "Niedersachsen (LBEG + SoilGrids + BÜK200)" : 40
+    "Sachsen-Anhalt (solo SoilGrids + BÜK200)" : 47
+```
+
 ## Matriz
 
 | Parámetro | SoilGrids 2.0 | LBEG BK50 | LBEG Bodenschätzung | BGR BÜK200 + FISBo | derived |

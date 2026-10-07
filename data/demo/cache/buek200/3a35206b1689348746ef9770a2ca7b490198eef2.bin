@@ -1,0 +1,1 @@
+{"displayFieldName":"BLATTNUM","fieldAliases":{"BLATTNUM":"Blattnummer"},"fields":[{"name":"BLATTNUM","type":"esriFieldTypeString","alias":"Blattnummer","length":7}],"features":[{"attributes":{"BLATTNUM":"CC 4726"}}]}

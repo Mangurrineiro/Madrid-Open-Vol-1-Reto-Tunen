@@ -88,7 +88,7 @@ function init() {
       for (const r of ringsOf(f.geometry)) for (const [lon, lat] of r) pts.push([lat, lon]);
     }
     if (pts.length && state.view === 'landing') getMap().fitBounds(L.latLngBounds(pts), { padding: [20, 20] });
-  }).catch(() => { /* fondo genérico */ });
+  }).catch(() => { $('#try-demo').hidden = true; });       // sin granja de ejemplo: solo subida
 
   $('#try-demo').addEventListener('click', loadDemo);
   $('#new-file').addEventListener('click', backToLanding);

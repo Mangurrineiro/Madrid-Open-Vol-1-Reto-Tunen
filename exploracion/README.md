@@ -3,6 +3,13 @@
 Las pruebas que hicimos antes de construir la API, en el orden en que se hicieron. No forman parte del
 producto, pero de aquí salieron las decisiones de diseño y los hechos de [`docs/fuentes.md`](../docs/fuentes.md).
 
+```mermaid
+flowchart LR
+    A["1 · SoilGrids<br/>por parcela<br/><sub>notebook</sub>"] --> B["2 · LBEG BK50<br/><sub>GetFeatureInfo manual</sub>"]
+    B --> C["3 · Evidencia sistemática<br/><sub>todas las fuentes · 4 puntos</sub>"]
+    C --> D["app/sources/<br/>+ lookups/"]
+```
+
 ## 1. SoilGrids por parcela — `soilgrids/Prueba-SoilGrids.ipynb`
 
 Notebook (Google Colab) que empieza consultando la API REST de SoilGrids en un punto y pasa a leer el ráster
@@ -17,10 +24,9 @@ campos enteros.
 Pruebas manuales del WMS de NIBIS (LBEG) con GetFeatureInfo:
 
 - `test_bk50_getfeatureinfo.py`: tres consultas sobre el mismo punto (L816 BK50 Karte, L839 nFKWe,
-  L837 Ertragsfähigkeit) con BBOX de 100 × 100 m en EPSG:25832. Respuestas en `bk50_responses/`.
+  L837 Ertragsfähigkeit) con BBOX de 100 × 100 m en EPSG:25832. Las respuestas (`bk50_responses/`) no se publican.
 - `run_l2186_getfeatureinfo.py`: consulta de una capa "Methode BK50" (L2186).
 - `ogc.xml`: GetCapabilities del servicio (175 capas).
-- `Bodenzahl - Bodenschätzung.json`: respuesta de ejemplo de la capa de la Bodenschätzung (L849).
 
 **Aprendido**: la BK50 en este WMS no trae textura, pH ni carbono orgánico; las capas "Methode" solo
 devuelven el ámbito del método, no valores; la Bodenschätzung sí da Bodenzahl y Klassenzeichen.
@@ -29,6 +35,7 @@ devuelven el ámbito del método, no valores; la Bodenschätzung sí da Bodenzah
 
 Scripts que consultan todas las fuentes en los mismos cuatro puntos y guardan las respuestas en bruto
 (`samples/`), más una segunda ronda de comprobaciones dirigidas al diseño del backend (`samples2/`).
+Esas respuestas se obtuvieron sobre los campos de la granja del reto y no se publican; los scripts sí.
 Detalle en [`evidencia/README.md`](evidencia/README.md).
 
 **Aprendido**:

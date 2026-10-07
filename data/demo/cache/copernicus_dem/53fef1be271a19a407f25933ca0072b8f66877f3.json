@@ -1,0 +1,1 @@
+{"url": "cop-dem-glo-30#bbox=10.592873,51.945702,10.658859,51.986271", "method": "DEM", "body": "{\"via\": \"Earth Search STAC\", \"tiles\": [\"https://copernicus-dem-30m.s3.amazonaws.com/Copernicus_DSM_COG_10_N51_00_E010_00_DEM/Copernicus_DSM_COG_10_N51_00_E010_00_DEM.tif\"]}", "fetched_at": "2026-10-07T12:23:19", "content_type": "image/tiff"}

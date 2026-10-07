@@ -18,7 +18,7 @@ FILES = ROOT / "out" / "test_files"
 
 def make_files() -> dict:
     FILES.mkdir(parents=True, exist_ok=True)
-    fc = json.loads((ROOT / "data" / "fields.geojson").read_text(encoding="utf-8"))
+    fc = json.loads((ROOT / "data" / "demo" / "example_farm.geojson").read_text(encoding="utf-8"))
     active = [f for f in fc["features"] if not f["properties"].get("isArchived")]
     f51 = next(f for f in active if f["properties"]["fieldName"] == F51)
     sys.path.insert(0, str(ROOT))
@@ -32,8 +32,8 @@ def make_files() -> dict:
 
     files = {
         "points.geojson": {"type": "FeatureCollection", "features": [
-            {"type": "Feature", "properties": {}, "geometry": {"type": "Point", "coordinates": [11.04, 52.38]}},
-            {"type": "Feature", "properties": {}, "geometry": {"type": "LineString", "coordinates": [[11.04, 52.38], [11.05, 52.39]]}}]},
+            {"type": "Feature", "properties": {}, "geometry": {"type": "Point", "coordinates": [10.62, 51.96]}},
+            {"type": "Feature", "properties": {}, "geometry": {"type": "LineString", "coordinates": [[10.62, 51.96], [10.63, 51.97]]}}]},
         "swapped.geojson": {"type": "FeatureCollection", "features": [
             {"type": "Feature", "properties": {"fieldName": "Swapped"}, "geometry": swap(f51["geometry"])}]},
         "two_fields.geojson": {"type": "FeatureCollection", "features": [f51, sa]},

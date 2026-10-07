@@ -1,0 +1,418 @@
+{
+ "type": "FeatureCollection",
+ "name": "Example farm (synthetic)",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "plotId": "demo-01",
+    "fieldName": "Lerchenbreite"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       10.605742,
+       51.958795
+      ],
+      [
+       10.610194,
+       51.958914
+      ],
+      [
+       10.611484,
+       51.957139
+      ],
+      [
+       10.606968,
+       51.957086
+      ],
+      [
+       10.605742,
+       51.958795
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "plotId": "demo-02",
+    "fieldName": "Am Graben"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       10.609118,
+       51.960636
+      ],
+      [
+       10.61428,
+       51.960728
+      ],
+      [
+       10.615785,
+       51.956715
+      ],
+      [
+       10.612559,
+       51.956636
+      ],
+      [
+       10.610323,
+       51.95894
+      ],
+      [
+       10.609118,
+       51.960636
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "plotId": "demo-03",
+    "fieldName": "Kirchweg"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       10.606172,
+       51.966013
+      ],
+      [
+       10.610151,
+       51.966106
+      ],
+      [
+       10.608602,
+       51.963894
+      ],
+      [
+       10.604667,
+       51.963801
+      ],
+      [
+       10.606172,
+       51.966013
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "plotId": "demo-04",
+    "fieldName": "Streifen Nord"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       10.608108,
+       51.962013
+      ],
+      [
+       10.614237,
+       51.962199
+      ],
+      [
+       10.614366,
+       51.96098
+      ],
+      [
+       10.608903,
+       51.960848
+      ],
+      [
+       10.608108,
+       51.962013
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "plotId": "demo-05",
+    "fieldName": "Schräge"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       10.600946,
+       51.955179
+      ],
+      [
+       10.606602,
+       51.95645
+      ],
+      [
+       10.606925,
+       51.955709
+      ],
+      [
+       10.601204,
+       51.954093
+      ],
+      [
+       10.600946,
+       51.955179
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "plotId": "demo-06",
+    "fieldName": "Südacker"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       10.597247,
+       51.950781
+      ],
+      [
+       10.602667,
+       51.95147
+      ],
+      [
+       10.603011,
+       51.948768
+      ],
+      [
+       10.597247,
+       51.948397
+      ],
+      [
+       10.597247,
+       51.950781
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "plotId": "demo-07",
+    "fieldName": "Großer Schlag"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       10.640215,
+       51.975695
+      ],
+      [
+       10.644828,
+       51.975987
+      ],
+      [
+       10.645043,
+       51.968808
+      ],
+      [
+       10.640322,
+       51.969536
+      ],
+      [
+       10.640215,
+       51.975695
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "plotId": "demo-08",
+    "fieldName": "Am Gehölz"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       10.635343,
+       51.975311
+      ],
+      [
+       10.639936,
+       51.975576
+      ],
+      [
+       10.64,
+       51.969735
+      ],
+      [
+       10.635429,
+       51.970623
+      ],
+      [
+       10.635343,
+       51.975311
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "plotId": "demo-09",
+    "fieldName": "Schmale Breite"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       10.645365,
+       51.972781
+      ],
+      [
+       10.647618,
+       51.972821
+      ],
+      [
+       10.647146,
+       51.968742
+      ],
+      [
+       10.645429,
+       51.968742
+      ],
+      [
+       10.645365,
+       51.972781
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "plotId": "demo-10",
+    "fieldName": "Bachwiese"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       10.647511,
+       51.972252
+      ],
+      [
+       10.652768,
+       51.972384
+      ],
+      [
+       10.654485,
+       51.969603
+      ],
+      [
+       10.647618,
+       51.968808
+      ],
+      [
+       10.647511,
+       51.972252
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "plotId": "demo-11",
+    "fieldName": "Hellacker"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       10.631202,
+       51.983576
+      ],
+      [
+       10.635665,
+       51.983576
+      ],
+      [
+       10.635665,
+       51.981629
+      ],
+      [
+       10.631202,
+       51.981629
+      ],
+      [
+       10.631202,
+       51.983576
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "plotId": "demo-12",
+    "fieldName": "Unterm Weg"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       10.640429,
+       51.969205
+      ],
+      [
+       10.646438,
+       51.968278
+      ],
+      [
+       10.646974,
+       51.965629
+      ],
+      [
+       10.641073,
+       51.965192
+      ],
+      [
+       10.640429,
+       51.969205
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

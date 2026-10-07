@@ -15,8 +15,9 @@ ROOT = Path(__file__).resolve().parents[2]
 SHOTS = ROOT / "out" / "screens"
 PORT = 8765
 URL = f"http://127.0.0.1:{PORT}/"
-F51 = "Umfeld Groß"
-F82 = "Mittelbreite"
+# Campos de la granja de ejemplo: uno en Niedersachsen (con LBEG) y otro en Sachsen-Anhalt
+F51 = "Lerchenbreite"
+F82 = "Großer Schlag"
 
 
 def start_server() -> subprocess.Popen:

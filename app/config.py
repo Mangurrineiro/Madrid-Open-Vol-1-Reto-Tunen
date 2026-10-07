@@ -15,11 +15,16 @@ for _stream in (sys.stdout, sys.stderr):
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
-CACHE = DATA / "cache"            # una subcarpeta por fuente: data/cache/<source>/
+CACHE = DATA / "cache"            # una subcarpeta por fuente: data/cache/<source>/ (local, no se versiona)
+DEMO_CACHE = DATA / "demo" / "cache"  # respuestas de la granja de ejemplo (versionadas, solo lectura)
 RENDERS = DATA / "renders"        # PNG + grid JSON generados
 LOOKUPS = ROOT / "lookups"
 STATIC = ROOT / "static"
-FIELDS_GEOJSON = DATA / "fields.geojson"
+# Granja de ejemplo: campos sintéticos dibujados sobre parcelas agrícolas cerca de Vienenburg
+# (Niedersachsen / Sachsen-Anhalt). FIELDS_GEOJSON=<ruta> la sustituye por otra granja local.
+FIELDS_GEOJSON = Path(os.environ.get("FIELDS_GEOJSON") or DATA / "demo" / "example_farm.geojson")
+if not FIELDS_GEOJSON.is_absolute():
+    FIELDS_GEOJSON = ROOT / FIELDS_GEOJSON
 
 USER_AGENT = "tunen-hackathon-soil-api/1.0 (research; hackathon)"
 

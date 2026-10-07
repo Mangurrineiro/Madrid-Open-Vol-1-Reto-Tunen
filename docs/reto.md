@@ -1,6 +1,10 @@
-# El reto — Tunen Soil Aggregation API (hackathon, 3 oct 2026)
+# 🎯 El reto — Tunen Soil Aggregation API
 
-Enunciado completo: [`reto/Tunen Hackathon 10_26 - Soil aggregation API.md`](../reto/Tunen%20Hackathon%2010_26%20-%20Soil%20aggregation%20API.md).
+> Reto propuesto por **Tunen** en el hackathon **Madrid Open – Vol.1** (Mad Tech Campus, 3 de octubre de 2026).
+> Este proyecto fue el **ganador** del reto.
+
+El enunciado original y los datos que lo acompañaban se compartieron solo con los participantes y no se
+publican en este repositorio; este documento resume lo necesario para entender el proyecto.
 
 ## Qué hay que construir
 
@@ -56,9 +60,45 @@ Reglas: demo en vivo de algo que funcione de verdad (no stub).
 
 ## Datos de partida
 
-- `reto/LuF-Seggerde-Dev-fields.geojson`: 174 campos (87 activos, 87 archivados) de una
-  granja real en Seggerde. Propiedades: `plotId, fieldName, area, subsidyArea, isArchived`.
+- GeoJSON con 174 campos (87 activos, 87 archivados) de una granja real en Seggerde (LuF Seggerde).
+  Propiedades: `plotId, fieldName, area, subsidyArea, isArchived`. Es un dataset privado compartido para el
+  hackathon: **no se publica** aquí, ni tampoco nada derivado de él. Las capturas de la documentación sí se
+  hicieron con él; la demo del repositorio usa una [granja sintética](../data/demo/example_farm.geojson) con el
+  mismo formato.
 - Notebooks oficiales: `soil_api_check.ipynb` (consulta por punto), `soil_raster_map.ipynb` (por área).
 - Notebook del equipo: `exploracion/soilgrids/Prueba-SoilGrids.ipynb` (vía raster VRT por parcela, media 0–30 cm ponderada por espesor, nFK).
 
-Cómo se resolvió cada punto: [arquitectura.md](arquitectura.md) y [interfaz.md](interfaz.md).
+## Qué se cubrió
+
+```mermaid
+flowchart LR
+    subgraph MUST["Must"]
+        M1["✅ API GeoJSON → capas<br/>por campo × parámetro × fuente"]
+        M2["✅ 5 parámetros"]
+        M3["✅ SoilGrids + LBEG<br/><sub>+ BÜK200</sub>"]
+        M4["✅ UI con mapa,<br/>parámetros y fuentes"]
+    end
+    subgraph SHOULD["Should"]
+        S1["✅ derived:<br/>media y desacuerdo"]
+        S2["✅ Mapa de<br/>incertidumbre"]
+        S3["✅ Refresh<br/><sub>endpoint + CLI</sub>"]
+    end
+    subgraph STRETCH["Stretch"]
+        X1["✅ Terreno<br/><sub>Copernicus DEM</sub>"]
+        X2["— Geología<br/><sub>GÜK200</sub>"]
+    end
+    MUST --> SHOULD --> STRETCH
+```
+
+| Punto del enunciado | Cómo se resolvió |
+|---|---|
+| Una capa por campo × parámetro × fuente | `POST /soil/layers` devuelve PNG + rejilla JSON + estadísticas + colormap + procedencia por capa ([arquitectura](arquitectura.md#api)) |
+| Fuentes categóricas → valores comparables | Tablas deterministas KA5 y Bodenschätzung con rango y σ ([`lookups/`](../lookups), [matriz](matriz_cobertura.md)) |
+| "Derived" como una fuente más | Adaptador `derived`: media ponderada por 1/σ², desacuerdo, conflictos y prioridad de muestreo |
+| Añadir una fuente = un adaptador | Registro con `@register_source` en [`app/sources/`](../app/sources) |
+| Refresh | `POST /refresh`, `GET /refresh` y `python -m app.cli refresh` |
+| Incertidumbre | Capa de desacuerdo, índice de fiabilidad, contradicciones físicas y puntos de muestreo ([interfaz](interfaz.md#️-incertidumbre-y-muestreo)) |
+| Datasets complementarios | BÜK200 para Sajonia-Anhalt (donde LBEG no llega) y Copernicus DEM |
+| Demo en vivo que funcione | Caché en disco precargada: la granja cargaba sin red (en el repo, la granja de ejemplo también) |
+
+Detalle: [arquitectura.md](arquitectura.md) e [interfaz.md](interfaz.md).

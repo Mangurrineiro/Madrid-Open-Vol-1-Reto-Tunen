@@ -49,7 +49,7 @@ def index():
 
 @app.get("/fields.geojson", include_in_schema=False)
 def fields_geojson():
-    return FileResponse(FIELDS_GEOJSON, media_type="application/geo+json")
+    return FileResponse(_demo_path(), media_type="application/geo+json")
 
 
 class LayersRequest(BaseModel):
@@ -168,8 +168,14 @@ def _layers(fields, sources=None, parameters=None) -> list[dict]:
     return out
 
 
-# Con terreno se guarda aparte: así demo.json (sin terreno) no cambia al activar/desactivar el módulo
-DEMO_JSON = DATA / "out" / ("demo_terrain.json" if ENABLE_TERRAIN else "demo.json")
+def _demo_path():
+    if not FIELDS_GEOJSON.exists():
+        raise HTTPException(404, "no hay granja de ejemplo: sube un GeoJSON")
+    return FIELDS_GEOJSON
+
+
+# Uno por granja de ejemplo; con terreno se guarda aparte: así el de sin terreno no cambia al activar/desactivar el módulo
+DEMO_JSON = DATA / "out" / f"demo_{FIELDS_GEOJSON.stem}{'_terrain' if ENABLE_TERRAIN else ''}.json"
 _demo_lock = threading.Lock()
 
 
@@ -179,14 +185,14 @@ def soil_demo(refresh: bool = False) -> dict:
     with _demo_lock:
         if DEMO_JSON.exists() and not refresh:
             return json.loads(DEMO_JSON.read_text(encoding="utf-8"))
-        fc = json.loads(FIELDS_GEOJSON.read_text(encoding="utf-8"))
+        fc = json.loads(_demo_path().read_text(encoding="utf-8"))
         fields = _layers(parse_fields(fc))
         feat = analysis.featured([{"field_id": f["field_id"], "name": f["name"], "state": f["state"],
                                    "reliability_index": f["reliability_index"], "_score": f["_score"],
                                    "conflict_share": f["conflict_share"]} for f in fields])
         for f in fields:
             f.pop("_score")
-        res = {"name": "LuF Seggerde", "featured": feat, "fields": fields}
+        res = {"name": fc.get("name") or FIELDS_GEOJSON.stem, "featured": feat, "fields": fields}
         bg = _terrain_background()
         if bg:
             res["terrain_background"] = bg
@@ -197,7 +203,7 @@ def soil_demo(refresh: bool = False) -> dict:
 
 def _rows_for(field_id: str) -> tuple[object, list[dict]]:
     if field_id not in _ROWS:
-        fc = json.loads(FIELDS_GEOJSON.read_text(encoding="utf-8"))
+        fc = json.loads(FIELDS_GEOJSON.read_text(encoding="utf-8")) if FIELDS_GEOJSON.exists() else {}
         field = next((f for f in parse_fields(fc) if f.field_id == field_id), _FIELDS.get(field_id))
         if field is None:
             raise HTTPException(404, f"campo desconocido: {field_id} (envíalo antes a POST /soil/layers)")
@@ -265,7 +271,7 @@ def refresh(req: RefreshRequest) -> dict:
     if not _refresh_lock.acquire(blocking=False):
         raise HTTPException(409, "ya hay un refresco en curso (GET /refresh)")
     try:
-        fc = req.fields or json.loads(FIELDS_GEOJSON.read_text(encoding="utf-8"))
+        fc = req.fields or json.loads(_demo_path().read_text(encoding="utf-8"))
         fields = parse_fields(fc)
         cleared = cache.clear(req.source)
     except Exception:

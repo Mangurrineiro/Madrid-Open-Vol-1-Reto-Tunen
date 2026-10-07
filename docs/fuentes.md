@@ -1,7 +1,8 @@
 # Fuentes de datos — hechos verificados
 
-Verificado con los scripts de `exploracion/evidencia/` el **3 oct 2026**. La evidencia en bruto está en `exploracion/evidencia/samples/`
-y `exploracion/evidencia/samples2/` (se regenera con `python exploracion/evidencia/run_all.py`).
+Verificado con los scripts de `exploracion/evidencia/` el **3 oct 2026**. La evidencia en bruto (`exploracion/evidencia/samples/`
+y `samples2/`) se generó sobre los campos de la granja del reto y no se publica; se regenera con
+`python exploracion/evidencia/run_all.py` teniendo ese GeoJSON.
 
 ## Hallazgo principal: la granja cruza la frontera de Niedersachsen
 
@@ -20,6 +21,15 @@ Puntos estándar (`exploracion/evidencia/samples/puntos.txt`):
 | P2 | 11.04118, 52.38258 | campo "Umfeld Groß" (31,9 ha), NDS |
 | P3 | 11.09105, 52.35035 | campo "Mittelbreite" (54,4 ha, el mayor), Sachsen-Anhalt |
 | P4 | 11.09344, 52.37704 | campo "Porzelle" (1,05 ha), Sachsen-Anhalt |
+
+## Resumen
+
+| Fuente | Acceso | Latencia | Problema principal | Cómo se resolvió |
+|---|---|---|---|---|
+| 🌍 SoilGrids | WCS 2.0.1 (GeoTIFF por caja) | ~0,4 s por cobertura | REST ~35 s por punto; WCS sin nodata (0 = enmascarado) | WCS por campo; 0 y −32768 → sin cobertura |
+| 🏛️ LBEG | WMS GetFeatureInfo | ~0,15 s (cuelgues de 90 s) | 503.2 dentro de HTTP 200; solo NDS | Validar cuerpo, reintentos, cortacircuitos, caché |
+| 🇩🇪 BÜK200 | ArcGIS REST + FISBo | ~0,3 s por punto | Sin geometría; datos en clases | Unidad de leyenda → perfiles → tablas KA5 |
+| 🏔️ Copernicus DEM | STAC → COG en S3 | una lectura por petición | Modelo de superficie (setos, árboles) | Franja de 40 m excluida en el resumen |
 
 ## ISRIC SoilGrids v2.0 — global, 250 m
 
@@ -84,6 +94,16 @@ Puntos estándar (`exploracion/evidencia/samples/puntos.txt`):
 - Es la única fuente con Bodenzahl real; además su Bodenart es una **tercera fuente de textura** (clase).
 
 ## BGR BÜK200 — toda Alemania, 1:200.000
+
+```mermaid
+flowchart LR
+    P["Punto"] --> H["Capa 0<br/>índice de hojas<br/><sub>BLATTNUM</sub>"]
+    H --> U["Capa de la hoja<br/><sub>CC3926 → TKLE_NR</sub>"]
+    U --> FI["Ficha FISBo<br/><sub>2–4 perfiles · % superficie</sub>"]
+    FI --> HZ["Horizonte 0–3 dm<br/>de los perfiles agrícolas"]
+    HZ --> LK["lookups/<br/>KA5 → % con rango"]
+    LK --> V["arcilla · arena · limo<br/>C orgánico · pH (CaCl₂)"]
+```
 
 - ArcGIS REST `https://services.bgr.de/arcgis/rest/services/boden/buek200/MapServer`.
   Capa 0 = índice de hojas (`BLATTNUM`); capas 2–56 = una por hoja (granja en **CC3926 Braunschweig**, id 18;

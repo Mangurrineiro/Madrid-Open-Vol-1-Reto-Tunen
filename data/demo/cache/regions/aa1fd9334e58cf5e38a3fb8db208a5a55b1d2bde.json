@@ -1,0 +1,1 @@
+{"url": "https://sgx.geodatenzentrum.de/wfs_vg250?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=vg250%3Avg250_lan&OUTPUTFORMAT=application%2Fjson&SRSNAME=EPSG%3A4326&COUNT=50", "method": "GET", "body": null, "fetched_at": "2026-10-03T17:42:43", "content_type": "application/json;charset=UTF-8"}

@@ -39,7 +39,7 @@ from rasterio.io import MemoryFile
 from rasterio.merge import merge
 
 from .. import cache
-from ..config import RENDERS
+from ..config import DEMO_CACHE, RENDERS
 from .base import Source, register_source, row
 
 NAME = "copernicus_dem"
@@ -250,10 +250,8 @@ def _cached_covering(bbox) -> DEM | None:
     for d in _MEM:
         if d.covers(bbox):
             return d
-    folder = cache.cache_dir(NAME)
-    if not folder.exists():
-        return None
-    for meta_path in folder.glob("*.json"):
+    folders = [cache.cache_dir(NAME), DEMO_CACHE / NAME]
+    for meta_path in (m for f in folders if f.exists() for m in f.glob("*.json")):
         try:
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
             if meta.get("method") != "DEM" or "#bbox=" not in meta["url"]:

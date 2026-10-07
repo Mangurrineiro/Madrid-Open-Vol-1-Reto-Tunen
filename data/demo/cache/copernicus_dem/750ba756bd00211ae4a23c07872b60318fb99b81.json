@@ -1,0 +1,1 @@
+{"url": "https://earth-search.aws.element84.com/v1/search", "method": "POST", "body": "{\"bbox\": [10.592873, 51.945702, 10.658859, 51.986271], \"collections\": [\"cop-dem-glo-30\"], \"limit\": 10}", "fetched_at": "2026-10-07T12:23:18", "content_type": "application/geo+json"}

@@ -22,6 +22,11 @@ Desde la raíz del repositorio, con las dependencias de `requirements.txt`:
 Resultado en `samples/` (ronda 1) y `samples2/` (ronda 2). `samples/_raw/` guarda lo pesado (capabilities XML,
 HTML de perfiles, GeoTIFF).
 
+> [!NOTE]
+> Los scripts leen el GeoJSON de la granja del reto (`reto/`), que no se publica, y tampoco se publican
+> `samples/` ni `samples2/`, porque contienen polígonos, puntos y respuestas de esos campos. Los hallazgos
+> están resumidos en [`docs/fuentes.md`](../../docs/fuentes.md).
+
 ## Ronda 1: qué hace cada paso
 
 | Paso | Script | Produce | Responde a |

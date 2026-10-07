@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from ui_common import F51, SHOTS, open_demo, open_field, points, report, session, to_px, wait_idle
 
-SHOW = "Mühlenbreite (+)"      # el campo con más relieve de la granja
+SHOW = "Am Gehölz"      # el campo con más relieve de la granja
 
 
 def main() -> int:

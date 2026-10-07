@@ -1,6 +1,6 @@
 """
 Terreno: perfil altimétrico en
-Mühlenbreite (+) (más relieve, Sachsen-Anhalt: sin Bodenzahl) y f51 (Niedersachsen: con Bodenzahl).
+Am Gehölz (más relieve, Sachsen-Anhalt: sin Bodenzahl) y f51 (Niedersachsen: con Bodenzahl).
 
   .venv\\Scripts\\python tests\\ui\\check_perfil.py   # capturas → out/screens/terrain_profile_*.png
 """
@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from ui_common import F51, SHOTS, open_demo, open_field, points, report, session, to_px
 
-SHOW = "Mühlenbreite (+)"
+SHOW = "Am Gehölz"
 
 
 def far_pair(pts: list[dict]) -> tuple[dict, dict]:
