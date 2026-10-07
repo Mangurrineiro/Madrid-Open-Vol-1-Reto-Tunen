@@ -1,10 +1,8 @@
-# 🎯 El reto — Tunen Soil Aggregation API
+# 🎯 Reto Tunen Soil Aggregation API
 
 > Reto propuesto por **Tunen** en el hackathon **Madrid Open – Vol.1** (Mad Tech Campus, 3 de octubre de 2026).
-> Este proyecto fue el **ganador** del reto.
 
-El enunciado original y los datos que lo acompañaban se compartieron solo con los participantes y no se
-publican en este repositorio; este documento resume lo necesario para entender el proyecto.
+El enunciado original y los datos que lo acompañaban se compartieron solo a los participantes; Este documento resume lo necesario para entender el proyecto.
 
 ## Qué hay que construir
 

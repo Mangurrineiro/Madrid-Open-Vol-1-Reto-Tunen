@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🌱 Tunen Soil Aggregation API
+# 🌱 Solución Reto Tunen - Madrid Open Vol. 1
 
 **Una sola API para todas las fuentes de datos de suelo alemanas, con incertidumbre honesta,
 y una interfaz que las pinta campo a campo.**
@@ -57,10 +57,8 @@ El enunciado completo, el alcance y los criterios del jurado están en [docs/ret
 **LuF Seggerde**: 87 campos activos a ambos lados de la frontera entre **Baja Sajonia** y **Sajonia-Anhalt**.
 Cada campo se rellena con una rejilla de 25 m calculada a partir de cinco fuentes.
 
-> [!IMPORTANT]
-> Las capturas y los GIFs de este repositorio se hicieron durante el hackathon con los campos de una granja real
-> que Tunen compartió con los participantes. **Ese dataset no se publica**: ni el GeoJSON ni nada derivado de él
-> (respuestas de las fuentes, polígonos o puntos). La demo del repositorio usa en su lugar una
+> Las capturas y los GIFs de este repositorio se hicieron durante el hackathon con los campos de la granja
+> que Tunen compartió con los participantes. La demo del repositorio usa en su lugar una
 > [granja de ejemplo sintética](data/demo/example_farm.geojson): 12 campos inventados, dibujados sobre parcelas
 > agrícolas cerca de Vienenburg, también a ambos lados de la frontera (6 en Baja Sajonia y 6 en Sajonia-Anhalt).
 

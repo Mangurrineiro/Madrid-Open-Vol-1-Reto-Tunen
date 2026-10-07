@@ -72,7 +72,6 @@ Al pasar el ratón por un campo aparece su nombre y su superficie, y al hacer cl
 
 <img src="img/capas_granja.jpg" alt="Las seis capas de suelo de la granja" width="100%">
 
-> [!NOTE]
 > La granja está partida por la frontera entre **Baja Sajonia** y **Sajonia-Anhalt**. La capa de
 > *Soil quality* (Bodenzahl) solo existe en la mitad norte porque es un dato de LBEG, y LBEG solo cubre
 > Baja Sajonia. Esos campos aparecen como *no data*, no como cero.
