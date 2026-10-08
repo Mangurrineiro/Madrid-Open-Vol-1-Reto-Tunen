@@ -1,3 +1,5 @@
+**🇪🇸 Español** · [🇬🇧 English](en/architecture.md)
+
 # Arquitectura
 
 ## Pipeline

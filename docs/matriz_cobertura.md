@@ -1,3 +1,5 @@
+**🇪🇸 Español** · [🇬🇧 English](en/coverage_matrix.md)
+
 # Matriz de cobertura (parámetro × fuente)
 
 Qué aporta cada fuente a cada parámetro, de qué atributo sale y cómo se traduce a la unidad común. La API la

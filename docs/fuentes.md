@@ -1,3 +1,5 @@
+**🇪🇸 Español** · [🇬🇧 English](en/sources.md)
+
 # Fuentes de datos — hechos verificados
 
 Verificado con los scripts de `exploracion/evidencia/` el **3 oct 2026**. La evidencia en bruto (`exploracion/evidencia/samples/`

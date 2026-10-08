@@ -1,5 +1,7 @@
 <div align="center">
 
+**🇪🇸 Español** · [🇬🇧 English](en/interface.md)
+
 # 🖥️ La interfaz
 
 **De una granja entera a un punto de 25 m, sin perder de vista cuánto se fía cada dato.**

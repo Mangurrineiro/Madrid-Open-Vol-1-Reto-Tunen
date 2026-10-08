@@ -3,6 +3,7 @@ fastapi>=0.110
 uvicorn>=0.29
 pydantic>=2.6
 requests>=2.31
+httpx>=0.27
 numpy>=1.26
 shapely>=2.0
 pyproj>=3.6

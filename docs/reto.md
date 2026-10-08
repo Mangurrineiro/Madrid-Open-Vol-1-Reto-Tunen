@@ -1,3 +1,5 @@
+**🇪🇸 Español** · [🇬🇧 English](en/challenge.md)
+
 # 🎯 Reto Tunen Soil Aggregation API
 
 > Reto propuesto por **Tunen** en el hackathon **Madrid Open – Vol.1** (Mad Tech Campus, 3 de octubre de 2026).

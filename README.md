@@ -1,5 +1,7 @@
 <div align="center">
 
+**🇪🇸 Español** · [🇬🇧 English](README.en.md)
+
 # 🌱 Solución Reto Tunen - Madrid Open Vol. 1
 
 **Una sola API para todas las fuentes de datos de suelo alemanas, con incertidumbre honesta,
